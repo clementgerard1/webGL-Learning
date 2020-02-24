@@ -5,7 +5,7 @@
   "main": "public/index.html",
   "scripts": {
     "watch": "(node server.js) & watch 'babel src -d  ./.tmp/babel ; browserify ./.tmp/babel/index.js -o ./public/bundle.js; rm -R ./.tmp/babel' ./src --ignoreDotFiles --interval=2 ",
-    "test": "test"
+    "test": "node test/test.js"
   },
   "author": "Clément Gérard",
   "devDependencies": {
