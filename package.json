@@ -1,0 +1,20 @@
+{
+  "name": "webgl_training",
+  "version": "0.0.1",
+  "description": "Test WebGL",
+  "main": "public/index.html",
+  "scripts": {
+    "watch": "(node server.js) & watch 'babel src -d  ./.tmp/babel ; browserify ./.tmp/babel/index.js -o ./public/bundle.js; rm -R ./.tmp/babel' ./src --ignoreDotFiles --interval=2 ",
+    "test": "test"
+  },
+  "author": "Clément Gérard",
+  "devDependencies": {
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.8.4",
+    "browserify": "^16.5.0",
+    "watch": "^1.0.2"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
