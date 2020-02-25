@@ -14,6 +14,8 @@ module.exports={
 	    return null;
 	  }
 
+	  return shaderProgram;
+
 	}
 
 }

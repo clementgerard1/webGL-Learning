@@ -4,8 +4,8 @@
   "description": "Test WebGL",
   "main": "public/index.html",
   "scripts": {
-    "run" : "node server.js",
-    "watch": "watch 'babel src -d  ./.tmp/babel ; browserify ./.tmp/babel/index.js -o ./public/bundle.js; rm -R ./.tmp/babel' ./src --ignoreDotFiles --interval=2 & (node server.js)",
+    "run": "node server.js",
+    "watch": "watch 'babel src -d  ./.tmp ; browserify ./.tmp/index.js -o ./public/bundle.js; rm -R ./.tmp' ./src --ignoreDotFiles --interval=2 & (node server.js)",
     "test": "node test/test.js"
   },
   "author": "Clément Gérard",
@@ -16,6 +16,7 @@
     "watch": "^1.0.2"
   },
   "dependencies": {
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "gl-matrix": "^3.2.1"
   }
 }
