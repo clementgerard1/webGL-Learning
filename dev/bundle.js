@@ -1,19 +1,21 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-const glmatrix = require("../node_modules/gl-matrix/gl-matrix-min.js");
+"use strict";
 
-const utils = require('./utils.js');
+var glmatrix = require("../node_modules/gl-matrix/gl-matrix-min.js");
 
-const vShader = require('./shaders/vShader.js');
+var utils = require('./utils.js');
 
-const fShader = require('./shaders/fShader.js');
+var vShader = require('./shaders/vShader.js');
+
+var fShader = require('./shaders/fShader.js');
 
 function init() {
-  const display = document.getElementById("display");
+  var display = document.getElementById("display");
   display.width = 1920;
-  display.height = 1080;
-  const ctx = display.getContext("webgl");
-  const shaderProgram = utils.initShaders(ctx, vShader, fShader);
-  const programInfo = {
+  display.height = 100;
+  var ctx = display.getContext("webgl");
+  var shaderProgram = utils.initShaders(ctx, vShader, fShader);
+  var programInfo = {
     program: shaderProgram,
     attribLocations: {
       vertexPosition: ctx.getAttribLocation(shaderProgram, 'aVertexPosition')
@@ -23,14 +25,14 @@ function init() {
       modelViewMatrix: ctx.getUniformLocation(shaderProgram, 'uModelViewMatrix')
     }
   };
-  const positionBuffer = ctx.createBuffer();
+  var positionBuffer = ctx.createBuffer();
   ctx.bindBuffer(ctx.ARRAY_BUFFER, positionBuffer);
-  const positions = [1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0];
+  var positions = [1.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0];
   ctx.bufferData(ctx.ARRAY_BUFFER, new Float32Array(positions), ctx.STATIC_DRAW);
   drawScene(ctx, programInfo, positionBuffer);
 }
 
-window.addEventListener("DOMContentLoaded", event => {
+window.addEventListener("DOMContentLoaded", function (event) {
   init();
 });
 
@@ -51,18 +53,18 @@ function drawScene(gl, programInfo, buffers) {
   // et nous voulons seulement voir les objets situés entre 0,1 unité et 100 unités
   // à partir de la caméra.
 
-  const fieldOfView = 45 * Math.PI / 180; // en radians
+  var fieldOfView = 45 * Math.PI / 180; // en radians
 
-  const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-  const zNear = 0.1;
-  const zFar = 100.0;
-  const projectionMatrix = glmatrix.mat4.create(); // note: glmatrix.js a toujours comme premier argument la destination
+  var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+  var zNear = 0.1;
+  var zFar = 100.0;
+  var projectionMatrix = glmatrix.mat4.create(); // note: glmatrix.js a toujours comme premier argument la destination
   // où stocker le résultat.
 
   glmatrix.mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar); // Définir la position de dessin comme étant le point "origine", qui est
   // le centre de la scène.
 
-  const modelViewMatrix = glmatrix.mat4.create(); // Commencer maintenant à déplacer la position de dessin un peu vers là où
+  var modelViewMatrix = glmatrix.mat4.create(); // Commencer maintenant à déplacer la position de dessin un peu vers là où
   // nous voulons commencer à dessiner le carré.
 
   glmatrix.mat4.translate(modelViewMatrix, // matrice de destination
@@ -72,16 +74,16 @@ function drawScene(gl, programInfo, buffers) {
   // positions pour les mettre dans l'attribut vertexPosition.
   //{
 
-  const numComponents = 2; // extraire 2 valeurs par itération
+  var numComponents = 2; // extraire 2 valeurs par itération
 
-  const type = gl.FLOAT; // les données dans le tampon sont des flottants 32bit
+  var type = gl.FLOAT; // les données dans le tampon sont des flottants 32bit
 
-  const normalize = false; // ne pas normaliser
+  var normalize = false; // ne pas normaliser
 
-  const stride = 0; // combien d'octets à extraire entre un jeu de valeurs et le suivant
+  var stride = 0; // combien d'octets à extraire entre un jeu de valeurs et le suivant
   // 0 = utiliser le type et numComponents ci-dessus
 
-  const offset = 0; // démarrer à partir de combien d'octets dans le tampon
+  var offset = 0; // démarrer à partir de combien d'octets dans le tampon
 
   gl.bindBuffer(gl.ARRAY_BUFFER, buffers);
   gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, numComponents, type, normalize, stride, offset);
@@ -93,38 +95,27 @@ function drawScene(gl, programInfo, buffers) {
   gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
   gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
   {
-    const offset = 0;
-    const vertexCount = 4;
-    gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
+    var _offset = 0;
+    var vertexCount = 4;
+    gl.drawArrays(gl.TRIANGLE_STRIP, _offset, vertexCount);
   }
 }
 },{"../node_modules/gl-matrix/gl-matrix-min.js":5,"./shaders/fShader.js":2,"./shaders/vShader.js":3,"./utils.js":4}],2:[function(require,module,exports){
-module.exports = `
+"use strict";
 
-  void main() {
-    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-  }
-  
-`;
+module.exports = "\n\n  void main() {\n    gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n  }\n  \n";
 },{}],3:[function(require,module,exports){
-module.exports = `
+"use strict";
 
-  attribute vec4 aVertexPosition;
-
-  uniform mat4 uModelViewMatrix;
-  uniform mat4 uProjectionMatrix;
-
-  void main() {
-    gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-  }
-  
-`;
+module.exports = "\n\n  attribute vec4 aVertexPosition;\n\n  uniform mat4 uModelViewMatrix;\n  uniform mat4 uProjectionMatrix;\n\n  void main() {\n    gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;\n  }\n  \n";
 },{}],4:[function(require,module,exports){
+"use strict";
+
 module.exports = {
-  initShaders: function (glContext, vertexSrc, fragmentSrc) {
-    const vShader = createShader(glContext, glContext.VERTEX_SHADER, vertexSrc);
-    const fShader = createShader(glContext, glContext.FRAGMENT_SHADER, fragmentSrc);
-    const shaderProgram = glContext.createProgram();
+  initShaders: function initShaders(glContext, vertexSrc, fragmentSrc) {
+    var vShader = createShader(glContext, glContext.VERTEX_SHADER, vertexSrc);
+    var fShader = createShader(glContext, glContext.FRAGMENT_SHADER, fragmentSrc);
+    var shaderProgram = glContext.createProgram();
     glContext.attachShader(shaderProgram, vShader);
     glContext.attachShader(shaderProgram, fShader);
     glContext.linkProgram(shaderProgram);
@@ -139,7 +130,7 @@ module.exports = {
 };
 
 function createShader(glContext, type, src) {
-  const shader = glContext.createShader(type);
+  var shader = glContext.createShader(type);
   glContext.shaderSource(shader, src);
   glContext.compileShader(shader);
 

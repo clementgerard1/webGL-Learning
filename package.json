@@ -4,19 +4,27 @@
   "description": "Test WebGL",
   "main": "public/index.html",
   "scripts": {
-    "run": "node server.js",
-    "watch": "watch 'babel src -d  ./.tmp ; browserify ./.tmp/index.js -o ./public/bundle.js; rm -R ./.tmp' ./src --ignoreDotFiles --interval=2 & (node server.js)",
+    "start": "MODE=prod; node server.js $MODE",
+    "start:dev": "MODE=dev; node server.js $MODE",
+    "build": "npm run build:dev; uglifyjs ./dev/bundle.js -o ./dist/bundle.js; uglifycss ./public/styles.css --output ./dist/styles.css; htmlminify -o ./dist/index.html ./public/index.html",
+    "build:dev": "npx babel src -d  ./.tmp --presets=@babel/preset-env; browserify ./.tmp/index.js -o ./dev/bundle.js; rm -R ./.tmp; cp public/* dev",
+    "watch": "MODE=prod; watch 'npm run build' ./src --ignoreDotFiles --interval=2 & (node server.js $MODE)",
+    "watch:dev": "MODE=dev; watch 'npm run build:dev' ./src --ignoreDotFiles --interval=2 & (node server.js $MODE)",
     "test": "node test/test.js"
   },
   "author": "Clément Gérard",
   "devDependencies": {
     "@babel/cli": "^7.8.4",
     "@babel/core": "^7.8.4",
+    "@babel/preset-env": "^7.8.4",
     "browserify": "^16.5.0",
+    "uglifycss": "0.0.29",
     "watch": "^1.0.2"
   },
   "dependencies": {
     "express": "^4.17.1",
-    "gl-matrix": "^3.2.1"
+    "gl-matrix": "^3.2.1",
+    "html-minify": "^0.3.2",
+    "uglify-js": "^3.8.0"
   }
 }

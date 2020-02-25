@@ -7,7 +7,7 @@ function init(){
 
 	const display = document.getElementById("display");
 	display.width = 1920;
-	display.height = 1080;
+	display.height = 100;
 	const ctx = display.getContext("webgl");
 	const shaderProgram = utils.initShaders(ctx, vShader, fShader);
 
