@@ -1,15 +1,20 @@
 const express = require('express');
 const app = express();
+const fs = require('fs');
 
 if(process.argv[2] == "dev"){
  
-	app.get('/', function (req, res) {
-	  res.sendFile(__dirname + "/dev/index.html");
-	})
+	app.get('/', function(req,res){
+		res.sendFile(__dirname + '/public/index.html');
+	});
 
 	app.get('/:url',function(req,res){
 		if(req.params.url != "favicon.ico"){
-	    res.sendFile(__dirname + '/dev/' + req.params.url);
+			if(fs.existsSync(__dirname + '/public/' + req.params.url)){
+	    	res.sendFile(__dirname + '/public/' + req.params.url);
+	    }else{
+	    	res.sendFile(__dirname + '/dev/' + req.params.url);
+	    }
 		}else{
 			res.send(null);
 		}

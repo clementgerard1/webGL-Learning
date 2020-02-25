@@ -12,7 +12,7 @@ var fShader = require('./shaders/fShader.js');
 function init() {
   var display = document.getElementById("display");
   display.width = 1920;
-  display.height = 100;
+  display.height = 1080;
   var ctx = display.getContext("webgl");
   var shaderProgram = utils.initShaders(ctx, vShader, fShader);
   var programInfo = {
