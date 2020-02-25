@@ -4,7 +4,8 @@
   "description": "Test WebGL",
   "main": "public/index.html",
   "scripts": {
-    "watch": "(node server.js) & watch 'babel src -d  ./.tmp/babel ; browserify ./.tmp/babel/index.js -o ./public/bundle.js; rm -R ./.tmp/babel' ./src --ignoreDotFiles --interval=2 ",
+    "run" : "node server.js",
+    "watch": "watch 'babel src -d  ./.tmp/babel ; browserify ./.tmp/babel/index.js -o ./public/bundle.js; rm -R ./.tmp/babel' ./src --ignoreDotFiles --interval=2 & (node server.js)",
     "test": "node test/test.js"
   },
   "author": "Clément Gérard",
