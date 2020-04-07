@@ -6,11 +6,13 @@
   "scripts": {
     "start": "MODE=prod; node server.js $MODE",
     "start:dev": "MODE=dev; node server.js $MODE",
+    "start:test": "MODE=test; node server.js $MODE",
     "build": "cp -r public/* dist; npm run build:dev; uglifyjs ./dev/bundle.js -o ./dist/bundle.js; uglifycss ./public/styles.css --output ./dist/styles.css; htmlminify -o ./dist/index.html ./public/index.html",
     "build:dev": "npx babel src -d  ./.tmp --presets=@babel/preset-env; browserify ./.tmp/index.js -o ./dev/bundle.js; rm -R ./.tmp",
+    "build:test": "cp -r src/class test/src ; npx babel test/src -d  ./.tmp --presets=@babel/preset-env; browserify ./.tmp/index.js -o ./test/build/bundle.js; rm -R ./.tmp; rm -r test/src/class",
     "watch": "MODE=prod; watch 'npm run build' ./src --ignoreDotFiles --interval=2 & (node server.js $MODE)",
-    "watch:dev": "MODE=dev; watch 'npm run build:dev' ./src --ignoreDotFiles --interval=2 & (node server.js $MODE)",
-    "test": "node test/test.js"
+    "watch:dev": "MODE=dev; watch 'npm run build:test' ./test/src --ignoreDotFiles --interval=2 & (node server.js $MODE)",
+    "test": "MODE=test; watch 'npm run build:test' ./test/src --ignoreDotFiles --interval=2 & (node server.js $MODE)"
   },
   "author": "Clément Gérard",
   "devDependencies": {

@@ -23,6 +23,46 @@ if(process.argv[2] == "dev"){
 	app.listen(3000);
 	console.log('\x1b[32m', "SERVER STARTED ON PORT 3000, DEV MODE...", '\x1b[30m');
 
+}else if(process.argv[2] == "test"){
+
+	app.get('/', function(req,res){
+		if(!req.query.test){
+			res.sendFile(__dirname + '/test/public/index.html');
+		}
+	});
+
+	app.get('/bundle.js', function(req,res){
+		if(!req.query.test){
+			res.sendFile(__dirname + '/test/build/bundle.js');
+		}
+	});
+
+	app.get('/:url',function(req,res){
+		if(req.params.url != "favicon.ico"){
+			if(fs.existsSync(__dirname + '/test/public/' + req.params.url + "/index.html")){
+				res.sendFile(__dirname + '/test/public/' + req.params.url + "/index.html");
+			}else if(fs.existsSync(__dirname + '/test/public/' + req.params.url)){
+	    	res.sendFile(__dirname + '/test/public/' + req.params.url);
+	    }else{
+	    	res.sendFile(__dirname + '/test/' + req.params.url);
+	    }
+		}else{
+			res.send(null);
+		}
+	});
+
+	app.get('/:url/:file',function(req,res){
+		if(fs.existsSync(__dirname + '/test/public/' + req.params.url + "/" + req.params.file)){
+    	res.sendFile(__dirname + '/test/public/' + req.params.url + "/" + req.params.file);
+		}else{
+			res.send(null);
+		}
+	});
+	 
+	app.listen(3000);
+	console.log('\x1b[32m', "SERVER STARTED ON PORT 3000, DEV MODE...", '\x1b[30m');
+
+
 }else{
 
 	app.get('/', function (req, res) {

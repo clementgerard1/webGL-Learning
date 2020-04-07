@@ -3,7 +3,12 @@
 	padding : 0px;
 }
 
-#display, body{
+body{
 	width : 100vw;
 	height : 100vh;
+}
+
+#display{
+	width : 50%;
+	height: 50%;
 }
