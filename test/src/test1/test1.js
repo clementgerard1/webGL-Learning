@@ -29,7 +29,7 @@ module.exports = function(){
 	camera.setType("perspective", {
 
 	});
-	camera.setPosition(0, 0, -9);
+	camera.setPosition(0, 0, 19);
 	scene.addCamera("main", camera);
 	scene.setCamera("main");
 	camera.setFixation(cube);

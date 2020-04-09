@@ -35,11 +35,11 @@ function (_Object3D) {
     _this.size = 1;
     _this.centerPosition = [0, 0, 0];
     _this.indexes = [0, 1, 2, 0, 2, 3, // avant
-    4, 5, 6, 4, 6, 7, // arrière
+    4, 5, 6, 4, 6, 7, // gauche
     8, 9, 10, 8, 10, 11, // haut
     12, 13, 14, 12, 14, 15, // bas
-    16, 17, 18, 16, 18, 19, // droite
-    20, 21, 22, 20, 22, 23 // gauche
+    16, 17, 18, 16, 18, 19, // dessous
+    20, 21, 22, 20, 22, 23 // derriere
     ];
     _this.bufferFunctions = {
       "position": _this._sendVertexPosition,
@@ -51,7 +51,7 @@ function (_Object3D) {
   _createClass(Cube, [{
     key: "setPosition",
     value: function setPosition(x, y, z) {
-      this.position = [x, y, z];
+      this.centerPosition = [x, y, z];
     }
   }, {
     key: "setSize",
@@ -193,14 +193,14 @@ function (_Movable) {
       var result = glmatrix.mat4.create();
 
       if (this.type == "orthogonal") {
-        glmatrix.mat4.ortho(result, -1, 1, -1, 1, 0, 100);
+        glmatrix.mat4.ortho(result, -2, 2, -2, 2, 0, 100);
       } else if (this.type == "perspective") {
-        glmatrix.mat4.perspective(result, 0.1, ratio, -10, 100);
+        glmatrix.mat4.perspective(result, 45 * (Math.PI / 180), ratio, 0.1, 100);
       }
 
-      var inv = glmatrix.vec4.create();
-      glmatrix.vec4.inverse(inv, this.position);
-      glmatrix.mat4.translate(result, result, inv);
+      var move = glmatrix.mat4.create();
+      glmatrix.mat4.translate(move, move, [this.position[0], this.position[1], -this.position[2]]);
+      glmatrix.mat4.multiply(result, result, move);
       return result;
     }
   }]);
@@ -400,9 +400,6 @@ function () {
         this.objects[i].render(webGLProgram);
       }
     }
-  }, {
-    key: "getNbVertex",
-    value: function getNbVertex() {}
   }]);
 
   return Scene;
@@ -594,7 +591,7 @@ function () {
 
 
       if (this.vertexUniforms["projection"] && this.vertexAttributes["position"]) {
-        this.vertexSrc += "gl_Position = " + this.infos["position"].name + " * " + this.infos["projection"].name + ";";
+        this.vertexSrc += "gl_Position = " + this.infos["projection"].name + " * " + this.infos["position"].name + ";";
       }
 
       this.vertexSrc += "}";
@@ -708,8 +705,9 @@ function () {
     key: "insertInBlock",
     value: function insertInBlock(block) {
       this.parentBlock = block;
-      this.canvas.width = this.parentBlock.clientWidth;
-      this.canvas.height = this.parentBlock.clientHeight;
+
+      this._handleResize();
+
       this.parentBlock.appendChild(this.canvas);
 
       if (this._updateOnResize) {
@@ -740,6 +738,7 @@ function () {
     value: function _handleResize() {
       this.canvas.width = this.parentBlock.clientWidth;
       this.canvas.height = this.parentBlock.clientHeight;
+      this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     }
   }, {
     key: "updateFrame",
@@ -760,7 +759,7 @@ function () {
 
       this.scene.render(this); //Shader uniforms
 
-      this.gl.uniformMatrix4fv(this.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix()); //Next Frame
+      this.gl.uniformMatrix4fv(this.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(this.gl.canvas.clientWidth / this.gl.canvas.clientHeight)); //Next Frame
 
       if (this.started) {
         this.refreshId = window.requestAnimationFrame(this.updateFrame);
@@ -837,7 +836,7 @@ module.exports = function () {
   scene.add3DObject("cube", cube);
   var camera = new Camera();
   camera.setType("perspective", {});
-  camera.setPosition(0, 0, -9);
+  camera.setPosition(0, 0, 19);
   scene.addCamera("main", camera);
   scene.setCamera("main");
   camera.setFixation(cube);
