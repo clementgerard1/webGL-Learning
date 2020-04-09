@@ -1,49 +1,131 @@
 class ShaderBuilder{
 
-
-	constructor(gl){
-		this.gl = gl;
-		this.vertexSrc = '';
-		this.fragmentSrc = '';
+	constructor(){
+		this.vertexSrc = null;
+		this.fragmentSrc = null;
 
 
-		//Shader Variable 
-		this.position = true;
+		//Vertex Shader Attributes
+		this.vertexAttributes = {
+			"position" : true,
+		};
 
-		//Shader uniform
+		//Fragment Shader Attributes
+		this.fragmentAttributes = {
+			"color" : true,
+		};
+
+		//Vertex Shader Uniform
+		this.vertexUniforms = {
+			"projection" : true,
+		}
+
+		//Fragment Shader Uniform
+		this.fragmentUniforms = {
+
+		}
+
+		this.infos = {
+			"position" : {
+				"nbDatas" : 3,
+				"type" : "attribute vec4",
+				"name" : "aVertexPosition",
+			},
+			"color" : {
+				"nbDatas" : 4,
+				"type" : "attribute vec4",
+				"name" : "aVertexColor",
+				"varyingType" : "varying lowp vec4",
+				"varyingName" : "vColor"
+			},
+			"projection" : {
+				"type" : "uniform mat4",
+				"name" : "uProjectionMatrix",
+			}
+		}
+
+		this.pointers = {
+			"position" : null,
+			"color" : null,
+			"projection" : null,
+		}
 
 	}
 
-	getShaderProgram(){
+	getPointer(value){
+		return this.pointers[value];
+	}
+
+	getActiveAttributes(){
+		let result = [];
+		for(let a in this.vertexAttributes){
+			if(this.vertexAttributes[a]){
+				result[result.length] = a;
+			}
+		}
+		for(let a in this.fragmentAttributes){
+			if(this.fragmentAttributes[a]){
+				result[result.length] = a;
+			}
+		}
+		return result;
+	}
+
+	getShaderProgram(gl){
 
 		this._buildShaders();
 
-		const vShader = this._createShader(this.gl.VERTEX_SHADER, this.vertexSrc);
-		const fShader = this._createShader(this.gl.FRAGMENT_SHADER, this.fragmentSrc);
+		const vShader = this._createShader(gl.VERTEX_SHADER, this.vertexSrc, gl);
+		const fShader = this._createShader(gl.FRAGMENT_SHADER, this.fragmentSrc, gl);
 
-		const shaderProgram = this.gl.createProgram();
- 	 	this.gl.attachShader(shaderProgram, vShader);
-  	this.gl.attachShader(shaderProgram, fShader);
-  	this.gl.linkProgram(shaderProgram);
+		const shaderProgram = gl.createProgram();
+ 	 	gl.attachShader(shaderProgram, vShader);
+  	gl.attachShader(shaderProgram, fShader);
+  	gl.linkProgram(shaderProgram);
 
-	  if (!this.gl.getProgramParameter(shaderProgram, this.gl.LINK_STATUS)) {
+	  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
 	    console.log('Error lors de la liaison des shaders')
 	    return null;
 	  }
+
+	  /* POINTERS */
+
+	  this.pointers = [];
+
+	  for(let a in this.vertexAttributes){
+			if(this.vertexAttributes[a]){
+				this.pointers[a] = gl.getAttribLocation(shaderProgram, this.infos[a].name);
+			}
+		}
+		for(let a in this.fragmentAttributes){
+			if(this.fragmentAttributes[a]){
+				this.pointers[a] = gl.getAttribLocation(shaderProgram, this.infos[a].name);
+			}
+		}
+		for(let u in this.vertexUniforms){
+			if(this.vertexUniforms[u]){
+				this.pointers[u] = gl.getUniformLocation(shaderProgram, this.infos[u].name);
+			}
+		}
+		for(let u in this.fragmentUniforms){
+			if(this.fragmentUniforms[u]){
+				this.pointers[u] = gl.getUniformLocation(shaderProgram, this.infos[u].name);
+			}
+		}
 
 	  return shaderProgram;
 
 	}
 
-	_createShader(type, src){
+	_createShader(type, src, gl){
 
-		const shader = this.gl.createShader(type);
-		this.gl.shaderSource(shader, src);
-		this.gl.compileShader(shader, src);
+		const shader = gl.createShader(type);
+		gl.shaderSource(shader, src);
+		gl.compileShader(shader, src);
 
-		if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-	    console.log('Erreur lors de la compilation du shader ' + src + "\n" + this.gl.getShaderInfoLog(shader));
-	    this.gl.deleteShader(shader);
+		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+	    console.log('Erreur lors de la compilation du shader ' + src + "\n" + gl.getShaderInfoLog(shader));
+	    gl.deleteShader(shader);
 	    return null;
 	  }
 
@@ -57,30 +139,71 @@ class ShaderBuilder{
 	}
 
 	_buildVertexShader(){
-		this.vertexSrc = `
-		  attribute vec4 aVertexPosition;
-		  attribute vec4 aVertexColor;
 
-		  uniform mat4 uModelViewMatrix;
-		  uniform mat4 uProjectionMatrix;
+		this.vertexSrc ='';
 
-		  varying lowp vec4 vColor;
+		//
+		for(let a in this.vertexAttributes){
+			if(this.vertexAttributes[a]){
+				this.vertexSrc += this.infos[a].type + " " + this.infos[a].name + ";";
+			}
+		}
+		for(let a in this.fragmentAttributes){
+			if(this.fragmentAttributes[a]){
+				this.vertexSrc += this.infos[a].type + " " + this.infos[a].name + ";";
+				this.vertexSrc += this.infos[a].varyingType + " " + this.infos[a].varyingName + ";";
+			}
+		}
+		for(let u in this.vertexUniforms){
+			if(this.vertexUniforms[u]){
+				this.vertexSrc += this.infos[u].type + " " + this.infos[u].name + ";";
+			}
+		}
+		this.vertexSrc += "void main() {";
 
-		  void main() {
-		    gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-		    vColor = aVertexColor;
-		  }
-		`
+			//Fragment Atributes
+			for(let a in this.fragmentAttributes){
+				if(this.fragmentAttributes[a]){
+					this.vertexSrc += this.infos[a].varyingName + " = " + this.infos[a].name + ";";
+				}
+			}
+
+			//Projection
+			if(this.vertexUniforms["projection"] && this.vertexAttributes["position"]){
+				this.vertexSrc += "gl_Position = " + this.infos["position"].name + " * " + this.infos["projection"].name + ";";
+			}
+
+		this.vertexSrc += "}";
+
+		console.log(this.vertexSrc);
+
 	}
 
 	_buildFragmentShader(){
-		this.fragmentSrc = `
-				varying lowp vec4 vColor;
 
-			  void main() {
-			    gl_FragColor = vColor;
-			  }
-		`;
+		this.fragmentSrc = '';
+		for(let a in this.fragmentAttributes){
+			if(this.fragmentAttributes[a]){
+				this.fragmentSrc += this.infos[a].varyingType + " " + this.infos[a].varyingName + ";";
+			}
+		}
+		for(let u in this.fragmentUniforms){
+			if(this.fragmentUniforms[u]){
+				this.fragmentSrc += this.infos[u].type + " " + this.infos[u].name + ";";
+			}
+
+		}
+		this.fragmentSrc += "void main() {";
+			//Color
+			if(this.fragmentAttributes["color"]){
+				this.fragmentSrc += "gl_FragColor = " + this.infos["color"].varyingName + ";";
+			}
+
+		this.fragmentSrc += "}";
+
+		console.log(this.fragmentSrc);
+
+
 	}
 
 }
