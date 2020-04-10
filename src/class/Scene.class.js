@@ -68,10 +68,7 @@ class Scene{
 	render(webGLProgram){
 		const activeAttributs = webGLProgram.getShaderBuilder().getActiveAttributes();
 		for(let i in this.objects){
-			for(let j = 0 ; j < activeAttributs.length ; j++){
-				this.objects[i].renderAttribute(activeAttributs[j], webGLProgram);
-			}
-			this.objects[i].render(webGLProgram);
+			this.objects[i].render(webGLProgram, activeAttributs);
 		}
 	}
 

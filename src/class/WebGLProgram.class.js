@@ -58,6 +58,10 @@ class WebGLProgram{
 
 	}
 
+	getScene(){
+		return this.scene;
+	}
+
 	insertInBlock(block){
 		this.parentBlock = block;
 		this._handleResize();
@@ -106,12 +110,12 @@ class WebGLProgram{
 		for(let i = 0 ; i < attributs.length ; i++){
 			this.gl.enableVertexAttribArray(this.actualShaderBuilder.getPointer(attributs[i]));
 		}
-		
-		//Render
-		this.scene.render(this);
 
 		//Shader uniforms
 		this.gl.uniformMatrix4fv(this.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(this.gl.canvas.clientWidth / this.gl.canvas.clientHeight));
+		
+		//Render
+		this.scene.render(this);
 
 		//Next Frame
 		if(this.started){

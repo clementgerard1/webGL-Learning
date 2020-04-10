@@ -18,6 +18,7 @@ class ShaderBuilder{
 		//Vertex Shader Uniform
 		this.vertexUniforms = {
 			"projection" : true,
+			"localTransformation" : true,
 		}
 
 		//Fragment Shader Uniform
@@ -41,6 +42,10 @@ class ShaderBuilder{
 			"projection" : {
 				"type" : "uniform mat4",
 				"name" : "uProjectionMatrix",
+			},
+			"localTransformation" : {
+				"type" : "uniform mat4",
+				"name" : "uLocalTransformationMatrix",
 			}
 		}
 
@@ -48,6 +53,7 @@ class ShaderBuilder{
 			"position" : null,
 			"color" : null,
 			"projection" : null,
+			"localTransformation" : null
 		}
 
 	}
@@ -169,8 +175,8 @@ class ShaderBuilder{
 			}
 
 			//Projection
-			if(this.vertexUniforms["projection"] && this.vertexAttributes["position"]){
-				this.vertexSrc += "gl_Position = " + this.infos["projection"].name + " * " + this.infos["position"].name + ";";
+			if(this.vertexUniforms["projection"] && this.vertexUniforms["localTransformation"] && this.vertexAttributes["position"]){
+				this.vertexSrc += "gl_Position = " + this.infos["projection"].name + " * " + this.infos["localTransformation"].name + " * " + this.infos["position"].name + ";";
 			}
 
 		this.vertexSrc += "}";

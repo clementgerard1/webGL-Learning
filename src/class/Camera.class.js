@@ -44,7 +44,7 @@ class Camera extends Movable{
 	getMatrix(ratio){
 		const result = glmatrix.mat4.create();
 		if(this.type == "orthogonal"){
-			glmatrix.mat4.ortho(result, -2, 2 , -2, 2, 0, 100);
+			glmatrix.mat4.ortho(result, -3 * ratio, 3 * ratio, -3 , 3, 0, 100);
 		}else if(this.type == "perspective"){
 			glmatrix.mat4.perspective(result, 45 * (Math.PI / 180), ratio, 0.1, 100);
 		}
