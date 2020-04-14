@@ -26,6 +26,10 @@ class WebGLProgram{
 
 	}
 
+	setTextureRenderer(bool){
+		this.actualShaderBuilder.setTextureRenderer(bool);
+	}
+
 	setUpdateOnResize(bool){
 		this.updateOnResize = bool;
 		if(bool){

@@ -12,7 +12,7 @@
     "build:test": "cp -r src/class test/src ; npx babel test/src -d  ./.tmp --presets=@babel/preset-env; browserify ./.tmp/index.js -o ./test/build/bundle.js; rm -R ./.tmp; rm -r test/src/class",
     "watch": "MODE=prod; watch 'npm run build' ./src --ignoreDotFiles --interval=2 & (node server.js $MODE)",
     "watch:dev": "MODE=dev; watch 'npm run build:test' ./test/src --ignoreDotFiles --interval=2 & (node server.js $MODE)",
-    "test": "MODE=test ; folders=('test/src' 'src/class');watch 'npm run build:test' ${folders[*]} --ignoreDotFiles --interval=2 & (node server.js $MODE)"
+    "test": "MODE=test ; folders=('test/src' 'src/class');watch 'npm run build:test' ${folders[*]} --ignoreDirectoryPattern=/test/src/class/ --ignoreDotFiles --interval=2 & (node server.js $MODE)"
   },
   "author": "Clément Gérard",
   "devDependencies": {

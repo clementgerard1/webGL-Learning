@@ -10,6 +10,7 @@ module.exports = function(){
 	const program = new WebGLProgram();
 	program.insertInBlock(document.getElementById("display"));
 	program.setUpdateOnResize(true);
+	program.setTextureRenderer(false);
 
 	const scene = new Scene();
 	scene.setClearColor(0,0,0,1);

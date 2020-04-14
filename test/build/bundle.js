@@ -741,7 +741,8 @@ function () {
     }; //Fragment Shader Attributes
 
     this.fragmentAttributes = {
-      "color": true
+      "color": true,
+      "textureCoordonnees": false
     }; //Vertex Shader Uniform
 
     this.vertexUniforms = {
@@ -749,7 +750,9 @@ function () {
       "localTransformation": true
     }; //Fragment Shader Uniform
 
-    this.fragmentUniforms = {};
+    this.fragmentUniforms = {
+      "texture": false
+    };
     this.infos = {
       "position": {
         "nbDatas": 3,
@@ -770,6 +773,17 @@ function () {
       "localTransformation": {
         "type": "uniform mat4",
         "name": "uLocalTransformationMatrix"
+      },
+      "texture": {
+        "type": "uniform sampler2D",
+        "name": "uSampler"
+      },
+      "textureCoordonnees": {
+        "nbDatas": 2,
+        "type": "attribute vec2",
+        "name": "aTextureCoord",
+        "varyingType": "varying highp vec2",
+        "varyingName": "vTextureCoord"
       }
     };
     this.pointers = {
@@ -803,6 +817,19 @@ function () {
       }
 
       return result;
+    }
+  }, {
+    key: "setTextureRenderer",
+    value: function setTextureRenderer(bool) {
+      if (bool) {
+        this.fragmentAttributes["color"] = false;
+        this.fragmentAttributes["textureCoordonnees"] = true;
+        this.fragmentUniforms["texture"] = true;
+      } else {
+        this.fragmentAttributes["color"] = true;
+        this.fragmentAttributes["textureCoordonnees"] = false;
+        this.fragmentUniforms["texture"] = false;
+      }
     }
   }, {
     key: "getShaderProgram",
@@ -936,6 +963,8 @@ function () {
 
       if (this.fragmentAttributes["color"]) {
         this.fragmentSrc += "gl_FragColor = " + this.infos["color"].varyingName + ";";
+      } else if (this.fragmentAttributes["texture"]) {
+        this.fragmentSrc += "gl_FragColor = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
       }
 
       this.fragmentSrc += "}";
@@ -983,6 +1012,11 @@ function () {
   }
 
   _createClass(WebGLProgram, [{
+    key: "setTextureRenderer",
+    value: function setTextureRenderer(bool) {
+      this.actualShaderBuilder.setTextureRenderer(bool);
+    }
+  }, {
     key: "setUpdateOnResize",
     value: function setUpdateOnResize(bool) {
       this.updateOnResize = bool;
@@ -1147,6 +1181,7 @@ module.exports = function () {
   var program = new WebGLProgram();
   program.insertInBlock(document.getElementById("display"));
   program.setUpdateOnResize(true);
+  program.setTextureRenderer(false);
   var scene = new Scene();
   scene.setClearColor(0, 0, 0, 1); //Tête
 

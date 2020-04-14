@@ -13,6 +13,7 @@ class ShaderBuilder{
 		//Fragment Shader Attributes
 		this.fragmentAttributes = {
 			"color" : true,
+			"textureCoordonnees" : false,
 		};
 
 		//Vertex Shader Uniform
@@ -23,7 +24,7 @@ class ShaderBuilder{
 
 		//Fragment Shader Uniform
 		this.fragmentUniforms = {
-
+			"texture" : false,
 		}
 
 		this.infos = {
@@ -37,7 +38,7 @@ class ShaderBuilder{
 				"type" : "attribute vec4",
 				"name" : "aVertexColor",
 				"varyingType" : "varying lowp vec4",
-				"varyingName" : "vColor"
+				"varyingName" : "vColor",
 			},
 			"projection" : {
 				"type" : "uniform mat4",
@@ -46,7 +47,18 @@ class ShaderBuilder{
 			"localTransformation" : {
 				"type" : "uniform mat4",
 				"name" : "uLocalTransformationMatrix",
-			}
+			},
+			"texture" : {
+				"type" : "uniform sampler2D",
+				"name" : "uSampler",
+			},
+			"textureCoordonnees" : {
+				"nbDatas" : 2,
+				"type" : "attribute vec2",
+				"name" : "aTextureCoord",
+				"varyingType" : "varying highp vec2",
+				"varyingName" : "vTextureCoord",
+			},
 		}
 
 		this.pointers = {
@@ -75,6 +87,18 @@ class ShaderBuilder{
 			}
 		}
 		return result;
+	}
+
+	setTextureRenderer(bool){
+		if(bool){
+			this.fragmentAttributes["color"] = false;
+			this.fragmentAttributes["textureCoordonnees"] = true;
+			this.fragmentUniforms["texture"] = true;
+		}else{
+			this.fragmentAttributes["color"] = true;
+			this.fragmentAttributes["textureCoordonnees"] = false;
+			this.fragmentUniforms["texture"] = false;
+		}
 	}
 
 	getShaderProgram(gl){
@@ -203,6 +227,8 @@ class ShaderBuilder{
 			//Color
 			if(this.fragmentAttributes["color"]){
 				this.fragmentSrc += "gl_FragColor = " + this.infos["color"].varyingName + ";";
+			}else if(this.fragmentAttributes["texture"]){
+				this.fragmentSrc += "gl_FragColor = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
 			}
 
 		this.fragmentSrc += "}";
