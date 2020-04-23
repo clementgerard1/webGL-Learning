@@ -1,10 +1,10 @@
 const WebGLProgram = require("../class/WebGLProgram.class.js");
 const Camera = require("../class/Camera.class.js");
-const Cube = require("../class/3DObjects/Cube.class.js");
+const Cube = require("../class/Objects3D/Cube.class.js");
 const AmbientLight = require("../class/Lights/AmbientLight.class.js");
 const Scene = require("../class/Scene.class.js");
 const Rotate = require("../class/Movements/Rotate.class.js");
-const Object3DGroup = require("../class/3DObjects/Object3DGroup.class.js");
+const Object3DGroup = require("../class/Objects3D/Object3DGroup.class.js");
 
 module.exports = function(){
 	const program = new WebGLProgram();

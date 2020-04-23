@@ -12,8 +12,8 @@ class ShaderBuilder{
 
 		//Fragment Shader Attributes
 		this.fragmentAttributes = {
-			"color" : true,
-			"textureCoordonnees" : false,
+			"color" : false, // ALWAYS FALSE
+			"textureCoordonnees" : true, // ALWAYS TRUE
 		};
 
 		//Vertex Shader Uniform
@@ -24,7 +24,7 @@ class ShaderBuilder{
 
 		//Fragment Shader Uniform
 		this.fragmentUniforms = {
-			"texture" : false,
+			"texture" : true,// ALWAYS TRUE
 		}
 
 		this.infos = {
@@ -65,7 +65,8 @@ class ShaderBuilder{
 			"position" : null,
 			"color" : null,
 			"projection" : null,
-			"localTransformation" : null
+			"localTransformation" : null,
+			"textureCoordonnees" : null
 		}
 
 	}
@@ -227,7 +228,7 @@ class ShaderBuilder{
 			//Color
 			if(this.fragmentAttributes["color"]){
 				this.fragmentSrc += "gl_FragColor = " + this.infos["color"].varyingName + ";";
-			}else if(this.fragmentAttributes["texture"]){
+			}else if(this.fragmentAttributes["textureCoordonnees"]){
 				this.fragmentSrc += "gl_FragColor = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
 			}
 

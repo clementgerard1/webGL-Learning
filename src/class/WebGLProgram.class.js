@@ -1,4 +1,8 @@
 const ShaderBuilder = require("./ShaderBuilder.class.js");
+const ColorTexture = require("./Textures/ColorTexture.class.js");
+const ImageTexture = require("./Textures/ImageTexture.class.js");
+const MirrorTexture = require("./Textures/MirrorTexture.class.js");
+const FrameTexture = require("./Textures/FrameTexture.class.js");
 
 class WebGLProgram{
 
@@ -28,6 +32,25 @@ class WebGLProgram{
 
 	setTextureRenderer(bool){
 		this.actualShaderBuilder.setTextureRenderer(bool);
+	}
+
+	createFrameTexture(){
+
+	}
+
+	createImageTexture(src){
+		const texture = new ImageTexture(this, src);
+		return texture.getTexture();
+	}
+
+	createMirrorTexture(){
+		const texture = new MirrorTexture(this);
+		return texture;
+	}
+
+	createColorTexture(r, g, b, a){
+		const texture = new ColorTexture(this, 1., 0., 0., 1);
+		return texture.getTexture();
 	}
 
 	setUpdateOnResize(bool){

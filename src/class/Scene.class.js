@@ -45,6 +45,10 @@ class Scene{
 		delete this.objects[name];
 	}
 
+	get3DObjects(){
+		return this.objects;
+	}
+
 	setClearColor(r, g, b, a){
 		this.clearColor = [r, g, b, a];
 	}

@@ -69,6 +69,33 @@ class Object3DGroup extends Object3D{
 
 	}
 
+  renderMirrored(webGLProgram, attributs, mirror, base){
+
+      //Local transformation
+      //base = matrice héritéé d'un groupe d'objet
+      let processedMatrix;
+      if(base == null || typeof base == "undefined"){
+          processedMatrix = glmatrix.mat4.create();
+          for(let move in this.movements){
+              //this.movements[move].processMirrored(processedMatrix);
+          }
+          webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
+      }else{
+          processedMatrix = base;
+          for(let move in this.movements){
+            //this.movements[move].processMirrored(processedMatrix);
+          }
+          webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
+      }
+      
+      for(let object in this.objects){
+        let copy = glmatrix.mat4.clone(processedMatrix);
+        this.objects[object].renderMirrored(webGLProgram, attributs, mirror, copy);
+      }
+
+  }
+
+
 }
 
 module.exports = Object3DGroup;

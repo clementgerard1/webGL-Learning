@@ -1,6 +1,8 @@
 const Object3D = require("../Interfaces/Object3D.class.js");
 const glmatrix = require("../../../node_modules/gl-matrix/gl-matrix-min.js");
-
+const Utils = require("../Utils.class.js");
+const MirrorTexture = require("../Textures/MirrorTexture.class");
+const Translate = require("../Movements/Translate.class.js");
 class Cube extends Object3D {
 
 	constructor(){
@@ -39,6 +41,7 @@ class Cube extends Object3D {
             1., 0., 0., 1.
         ]; 
         this.movements = [];
+        this.textures = [];
 		this.indexes = [
 	    0,  1,  2,      0,  2,  3,    // avant
 	    4,  5,  6,      4,  6,  7,    // gauche
@@ -46,10 +49,43 @@ class Cube extends Object3D {
 	    12, 13, 14,     12, 14, 15,   // bas
 	    16, 17, 18,     16, 18, 19,   // dessous
 	    20, 21, 22,     20, 22, 23,   // derriere
-	  ];
+	      ];
+        this.textureCoordonnees = [
+            0., 0.,
+            0., 1.,
+            1., 1.,
+            1., 0.,
+
+            0., 0.,
+            0., 1.,
+            1., 1.,
+            1., 0.,
+
+            0., 0.,
+            0., 1.,
+            1., 1.,
+            1., 0.,
+
+            0., 0.,
+            0., 1.,
+            1., 1.,
+            1., 0.,
+
+            0., 0.,
+            0., 1.,
+            1., 1.,
+            1., 0.,
+
+            0., 0.,
+            0., 1.,
+            1., 1.,
+            1., 0.,
+
+        ]
 		this.bufferFunctions = {
 			"position" : this._sendVertexPosition,
 			"color" : this._sendVertexColor,
+            "textureCoordonnees" : this._sendTextureCoordonnees,
 		}
 	}
 
@@ -59,6 +95,14 @@ class Cube extends Object3D {
 
     removeMovement(name){
         delete this.movements[name];
+    }
+
+    addTexture(name, texture){
+        this.textures[name] = texture;
+    }
+
+    removeTexture(name){
+        delete this.textures[name];
     }
 
     getNbMovements(){
@@ -87,11 +131,37 @@ class Cube extends Object3D {
         this.colors = this.colors.concat(derriere).concat(derriere).concat(derriere).concat(derriere);
     }
 
-	renderAttribute(attribut, webGLProgram){
-		this.bufferFunctions[attribut](webGLProgram, this);
+	renderAttribute(attribut, webGLProgram, func){
+		this.bufferFunctions[attribut](webGLProgram, this, func);
 	}
 
-	_sendVertexPosition(webGLProgram, that){
+    _sendTextureCoordonnees(webGLProgram, that){
+        const numTexture = 0;
+        for(let text in that.textures){
+            if(!(that.textures[text] instanceof MirrorTexture)){
+                webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
+                webGLProgram.getContext().bindTexture(webGLProgram.getContext().TEXTURE_2D, that.textures[text]);
+                webGLProgram.getContext().uniform1i(webGLProgram.getShaderBuilder().getPointer("texture"), false, 0);
+
+
+                webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("textureCoordonnees"));
+                webGLProgram.getContext().vertexAttribPointer(
+                    webGLProgram.getShaderBuilder().getPointer("textureCoordonnees"),
+                    2,
+                    webGLProgram.getContext().FLOAT,
+                    false,
+                    0,
+                    0
+                );
+
+                //Insérer les données
+                webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.textureCoordonnees), webGLProgram.getContext().STATIC_DRAW);
+            }
+        }
+
+    }
+
+	_sendVertexPosition(webGLProgram, that, func){
 
 		//Initialisation
         webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("position"));
@@ -136,6 +206,16 @@ class Cube extends Object3D {
         	that.centerPosition[0] - (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] - (that.size/2),
         	that.centerPosition[0] + (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] - (that.size/2)
         ]; 
+
+        if(typeof func != "undefined"){
+            for(let i = 0 ; i < (positions.length / 3) ; i++){
+                const result = func(positions[(i*3)], positions[(i*3)+1], positions[(i*3)+2]);
+                positions[(i*3)] = result[0];
+                positions[(i*3)+1] = result[1];
+                positions[(i*3)+2] = result[2];
+            }
+        }
+
 
         webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(positions), webGLProgram.getContext().STATIC_DRAW);
 	}
@@ -184,7 +264,84 @@ class Cube extends Object3D {
 
 		//Draw
         webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+
 	}
+
+    renderMirrored(webGLProgram, attributs, mirror, base){
+
+        const that = this;
+        for(let i = 0 ; i < attributs.length ; i++){
+            this.renderAttribute(attributs[i], webGLProgram, function(x, y, z){
+                const point = glmatrix.vec3.fromValues(x, y, z);
+                return Utils.symPlane(point, mirror.mirrorPos, mirror.mirrorVec1, mirror.mirrorVec2);
+            });
+        }
+
+        //Local transformation
+        //base = matrice héritéé d'un groupe d'objet
+        let processedMatrix;
+        if(base == null || typeof base == "undefined"){
+            processedMatrix = glmatrix.mat4.create();
+            for(let move in this.movements){
+                this.movements[move].process(processedMatrix);
+            }
+            webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
+        }else{
+            processedMatrix = base;
+            for(let move in this.movements){
+                this.movements[move].process(processedMatrix);
+            }
+            webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
+        }
+
+        //Index
+        webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, webGLProgram.getBuffer("index"));
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW);
+
+        //Draw
+        webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+        
+    }
+
+    clone(){
+        const neww = new this.constructor();
+        neww.size = this.size;
+        neww.centerPosition = this.centerPosition.slice();
+        neww.colors = this.colors.slice();
+        Object.assign(neww.movements, this.movements);
+        Object.assign(neww.textures, this.textures);
+        neww.indexes = this.indexes.slice();
+        neww.textureCoordonnees = this.textureCoordonnees.slice();
+        Object.assign(neww.bufferFunctions, this.bufferFunctions);
+        return neww;
+    }
+
+    mirrorClone(mirror){
+        const neww = new this.constructor();
+        neww.size = this.size;
+
+        //New position
+        neww.centerPosition = this.centerPosition.slice();
+        //const point = glmatrix.vec3.fromValues(this.centerPosition[0], this.centerPosition[1], this.centerPosition[2]);
+        //const newP = Utils.symPlane(point, mirror.mirrorPos, mirror.mirrorVec1, mirror.mirrorVec2);
+        //neww.centerPosition = [newP[0], newP[1], newP[2]];
+        //neww.centerPosition = [this.centerPosition[0], this.centerPosition[1], this.centerPosition[2]];
+
+        neww.colors = this.colors.slice();
+        
+        //New center movements
+        for(let move in this.movements){
+            neww.movements[move] = this.movements[move].mirrorClone(mirror);
+        }
+
+
+
+        Object.assign(neww.textures, this.textures);
+        neww.indexes = this.indexes.slice();
+        neww.textureCoordonnees = this.textureCoordonnees.slice();
+        Object.assign(neww.bufferFunctions, this.bufferFunctions);
+        return neww;
+    }
 
 } 
 
