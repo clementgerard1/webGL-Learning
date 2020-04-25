@@ -1,4 +1,8 @@
 const ShaderBuilder = require("./ShaderBuilder.class.js");
+const ColorTexture = require("./Textures/ColorTexture.class.js");
+const ImageTexture = require("./Textures/ImageTexture.class.js");
+const MirrorTexture = require("./Textures/MirrorTexture.class.js");
+const FrameTexture = require("./Textures/FrameTexture.class.js");
 
 class WebGLProgram{
 
@@ -15,7 +19,7 @@ class WebGLProgram{
 
 		//Initialisation de l'environnement
 		this.canvas = document.createElement('canvas');
-		this.gl = this.canvas.getContext("webgl");
+		this.gl = this.canvas.getContext("webgl", {stencil:true});
 
 		//Default Shader
 		this.defaultShaderBuilder = new ShaderBuilder();
@@ -24,6 +28,29 @@ class WebGLProgram{
 		//Variables
 		this.buffers = [];
 
+	}
+
+	setTextureRenderer(bool){
+		this.actualShaderBuilder.setTextureRenderer(bool);
+	}
+
+	createFrameTexture(){
+
+	}
+
+	createImageTexture(src){
+		const texture = new ImageTexture(this, src);
+		return texture.getTexture();
+	}
+
+	createMirrorTexture(){
+		const texture = new MirrorTexture(this);
+		return texture;
+	}
+
+	createColorTexture(r, g, b, a){
+		const texture = new ColorTexture(this, r, g, b, a);
+		return texture.getTexture();
 	}
 
 	setUpdateOnResize(bool){
@@ -56,6 +83,10 @@ class WebGLProgram{
 			this.updateProgram();
 		}
 
+	}
+
+	getScene(){
+		return this.scene;
 	}
 
 	insertInBlock(block){
@@ -106,12 +137,12 @@ class WebGLProgram{
 		for(let i = 0 ; i < attributs.length ; i++){
 			this.gl.enableVertexAttribArray(this.actualShaderBuilder.getPointer(attributs[i]));
 		}
-		
-		//Render
-		this.scene.render(this);
 
 		//Shader uniforms
 		this.gl.uniformMatrix4fv(this.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(this.gl.canvas.clientWidth / this.gl.canvas.clientHeight));
+		
+		//Render
+		this.scene.render(this);
 
 		//Next Frame
 		if(this.started){

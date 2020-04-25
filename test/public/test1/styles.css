@@ -7,3 +7,39 @@
 	margin : 0px;
 	padding : 0px;
 }
+
+#left, #right, #up, #down, #reset, #projection{
+	position : absolute;
+	width : 15vw;
+	height : 10vh;
+}
+
+#left{
+	left : 10vw;
+	top : 50vh;
+}
+
+#up{
+	left : 45vw;
+	top : 10vh;
+}
+
+#down{
+	left : 45vw;
+	top : 90vh;
+}
+
+#right{
+	left : 80vw;
+	top : 50vh;
+}
+
+#reset{
+	top : 0px;
+	left : 0px;
+}
+
+#projection{
+	top : 0px;
+	right : 0vw;
+}

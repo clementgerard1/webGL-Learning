@@ -1,5 +1,9 @@
 class Object3D{
 
+	constructor(){
+		this.mirrored = 0;
+	}
+
 	setPositions(){
 
 	}

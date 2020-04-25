@@ -11,6 +11,16 @@ class Camera extends Movable{
 		this.direction = glmatrix.vec4.fromValues(0, 0, 1, 1);
 		this.fixed = false;
 		this.type = "perspective";
+		this.orthoSettings = {
+			"size" : 6,
+			"far" : 100,
+			"near" : 0,
+		};
+		this.perspSettings = {
+			"focal" : 45,
+			"far" : 100,
+			"near" : 0.1,
+		};
 	}
 
 	//val = false || val = 3DObject || val = [x, y, z]
@@ -36,20 +46,26 @@ class Camera extends Movable{
 	setType(name, args){
 		if(name == "orthogonal"){
 			this.type = "orthogonal";
+			for(let arg in args){
+				this.orthoSettings[arg] = args[arg];
+			}
 		}else{
 			this.type = "perspective";
+			for(let arg in args){
+				this.perspSettings[arg] = args[arg];
+			}
 		}
 	}
 
 	getMatrix(ratio){
 		const result = glmatrix.mat4.create();
 		if(this.type == "orthogonal"){
-			glmatrix.mat4.ortho(result, -2, 2 , -2, 2, 0, 100);
+			glmatrix.mat4.ortho(result, -(this.orthoSettings["size"] / 2) * ratio, (this.orthoSettings["size"] / 2) * ratio, -(this.orthoSettings["size"] / 2) , (this.orthoSettings["size"] / 2), this.orthoSettings["near"], this.orthoSettings["far"]);
 		}else if(this.type == "perspective"){
-			glmatrix.mat4.perspective(result, 45 * (Math.PI / 180), ratio, 0.1, 100);
+			glmatrix.mat4.perspective(result, this.perspSettings["focal"] * (Math.PI / 180), ratio, this.perspSettings["near"], this.perspSettings["far"]);
 		}
 		const move = glmatrix.mat4.create();
-		glmatrix.mat4.translate(move, move, [this.position[0], this.position[1], -this.position[2]]);
+		glmatrix.mat4.translate(move, move, [-this.position[0], -this.position[1], -this.position[2]]);
 
 		glmatrix.mat4.multiply(result, result, move);
 		return result;
