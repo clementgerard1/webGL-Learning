@@ -1,6 +1,7 @@
 const Object3D = require("../Interfaces/Object3D.class.js");
 const glmatrix = require("../../../node_modules/gl-matrix/gl-matrix-min.js");
 const MirrorTexture = require("../Textures/MirrorTexture.class.js");
+const ColorTexture = require("../Textures/ColorTexture.class");
 
 class Plan extends Object3D {
 
@@ -10,7 +11,6 @@ class Plan extends Object3D {
         this.height = 1;
 		this.centerPosition = [0, 0, 0];
         this.movements = [];
-        this.vecToProcess = [];
 		this.indexes = [
 	    0,  1,  2,      0,  2,  3,    // avant
 	      ];
@@ -38,13 +38,26 @@ class Plan extends Object3D {
 
     addTexture(name, texture){
         this.textures[name] = texture;
+        this._checkTransparency();
     }
 
     removeTexture(name){
         delete this.textures[name];
+        this._checkTransparency();
     }
 
-
+    _checkTransparency(){
+        this.transparency = false;
+        for(let text in this.textures){
+            if(this.textures[text] instanceof MirrorTexture){
+                this.transparency = true;
+            }
+            if(this.textures[text] instanceof ColorTexture && this.textures[text].getRGBA()[3] < 1){
+                this.transparency = true;
+            }
+            //Gérer le cas des ImageTexture Transparentes
+        }
+    }
 
     getNbMovements(){
         return Object.keys(this.movements).length;
@@ -120,19 +133,7 @@ class Plan extends Object3D {
         webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(positions), webGLProgram.getContext().STATIC_DRAW);
 	}
 
-	render(webGLProgram, attributs, base){
-
-        //Mirror PreSettings
-        for(let text in this.textures){
-            if(this.textures[text] instanceof MirrorTexture){
-                this.textures[text].preDraw(this);
-            }
-        }
-
-
-        for(let i = 0 ; i < attributs.length ; i++){
-            this.renderAttribute(attributs[i], webGLProgram);
-        }
+	render(transformsCollection, base){
 
         //Local transformation
         //base = matrice héritéé d'un groupe d'objet
@@ -144,21 +145,33 @@ class Plan extends Object3D {
             for(let move in this.movements){
                 this.movements[move].process(processedMatrix, stepUp);
             }
-            webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
         }else{
             processedMatrix = base;
             for(let move in this.movements){
                 this.movements[move].process(processedMatrix, stepUp);
             }
-            webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
         }
 
+        transformsCollection[transformsCollection.length] = [this, processedMatrix];
+    }
 
-		//Index
-		webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, webGLProgram.getBuffer("index"));
-  	    webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW);
+    draw(webGLProgram, attributs, processedMatrix){
+        super.draw(webGLProgram);
+        //Mirror PreSettings
+        for(let text in this.textures){
+            if(this.textures[text] instanceof MirrorTexture){
+                this.textures[text].preDraw(this, processedMatrix);
+            }
+        }
 
-		//Draw
+        //Render attributs
+        for(let i = 0 ; i < attributs.length ; i++){
+            this.renderAttribute(attributs[i], webGLProgram);
+        }
+        //Draw
+        webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
+        webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, webGLProgram.getBuffer("index"));
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW);
         webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
 
         //Mirror PostSettings
@@ -167,6 +180,20 @@ class Plan extends Object3D {
                 this.textures[text].postDraw(this, processedMatrix);
             }
         }
+    }
+
+    clone(){
+        const neww = new this.constructor();
+        super.clone(neww);
+        neww.width = this.width;
+        neww.height = this.height;
+        neww.centerPosition = this.centerPosition.slice();
+        neww.indexes = this.indexes.slice();
+        neww.textureCoordonnees = this.textureCoordonnees.slice();
+        Object.assign(neww.movements, this.movements);
+        Object.assign(neww.textures, this.textures);
+        Object.assign(neww.bufferFunctions, this.bufferFunctions);
+        return neww;
     }
 
 } 

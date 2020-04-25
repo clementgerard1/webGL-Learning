@@ -2,6 +2,7 @@ const Object3D = require("../Interfaces/Object3D.class.js");
 const glmatrix = require("../../../node_modules/gl-matrix/gl-matrix-min.js");
 const Utils = require("../Utils.class.js");
 const MirrorTexture = require("../Textures/MirrorTexture.class");
+const ColorTexture = require("../Textures/ColorTexture.class");
 const Translate = require("../Movements/Translate.class.js");
 class Cube extends Object3D {
 
@@ -99,10 +100,25 @@ class Cube extends Object3D {
 
     addTexture(name, texture){
         this.textures[name] = texture;
+        this._checkTransparency();
     }
 
     removeTexture(name){
         delete this.textures[name];
+        this._checkTransparency();
+    }
+
+    _checkTransparency(){
+        this.transparency = false;
+        for(let text in this.textures){
+            if(this.textures[text] instanceof MirrorTexture){
+                this.transparency = true;
+            }
+            if(this.textures[text] instanceof ColorTexture && this.textures[text].getRGBA()[3] < 1){
+                this.transparency = true;
+            }
+            //Gérer le cas des ImageTexture Transparentes
+        }
     }
 
     getNbMovements(){
@@ -161,7 +177,7 @@ class Cube extends Object3D {
 
     }
 
-	_sendVertexPosition(webGLProgram, that, func){
+	_sendVertexPosition(webGLProgram, that){
 
 		//Initialisation
         webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("position"));
@@ -207,16 +223,6 @@ class Cube extends Object3D {
         	that.centerPosition[0] + (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] - (that.size/2)
         ]; 
 
-        if(typeof func != "undefined"){
-            for(let i = 0 ; i < (positions.length / 3) ; i++){
-                const result = func(positions[(i*3)], positions[(i*3)+1], positions[(i*3)+2]);
-                positions[(i*3)] = result[0];
-                positions[(i*3)+1] = result[1];
-                positions[(i*3)+2] = result[2];
-            }
-        }
-
-
         webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(positions), webGLProgram.getContext().STATIC_DRAW);
 	}
 
@@ -235,41 +241,48 @@ class Cube extends Object3D {
         webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.colors), webGLProgram.getContext().STATIC_DRAW);
     }
 
-	render(webGLProgram, attributs, base){
-
-        for(let i = 0 ; i < attributs.length ; i++){
-            this.renderAttribute(attributs[i], webGLProgram);
-        }
-
+	render(transformsCollection, base){
         //Local transformation
         //base = matrice héritéé d'un groupe d'objet
         let processedMatrix;
-        const stepUp = this.mirrored == 0;
+        const stepUp = this.getMirrorValue() == 0;
         if(base == null || typeof base == "undefined"){
             processedMatrix = glmatrix.mat4.create();
             for(let move in this.movements){
                 this.movements[move].process(processedMatrix, stepUp);
             }
-            webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
         }else{
             processedMatrix = base;
             for(let move in this.movements){
                 this.movements[move].process(processedMatrix, stepUp);
             }
-            webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
+            
         }
 
-		//Index
-		webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, webGLProgram.getBuffer("index"));
-  	    webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW);
-
-		//Draw
-        webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+        transformsCollection[transformsCollection.length] = [this, processedMatrix];
 
 	}
 
+    draw(webGLProgram, attributs, processedMatrix){
+        super.draw(webGLProgram);
+        for(let i = 0 ; i < attributs.length ; i++){
+            this.renderAttribute(attributs[i], webGLProgram);
+        }
+
+        webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
+
+        //Index
+        webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, webGLProgram.getBuffer("index"));
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW);
+
+        //Draw
+        webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+
+    }
+
     clone(){
         const neww = new this.constructor();
+        super.clone(neww);
         neww.size = this.size;
         neww.centerPosition = this.centerPosition.slice();
         neww.colors = this.colors.slice();

@@ -46,7 +46,7 @@ class Object3DGroup extends Object3D{
 		delete this.objects[name];
 	}
 
-	render(webGLProgram, attributs, base){
+	render(transformsCollection, base){
 
       //Local transformation
       //base = matrice héritéé d'un groupe d'objet
@@ -59,7 +59,6 @@ class Object3DGroup extends Object3D{
                 this.movements[move].process(processedMatrix, stepUp);
             }
           }
-          webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
       }else{
           processedMatrix = base;
           if(this.mirrored == 0){
@@ -67,15 +66,23 @@ class Object3DGroup extends Object3D{
               this.movements[move].process(processedMatrix, stepUp);
             }
           }
-          webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
       }
-      
+
       for(let object in this.objects){
         let copy = glmatrix.mat4.clone(processedMatrix);
-      	this.objects[object].render(webGLProgram, attributs, copy);
+      	this.objects[object].render(transformsCollection, copy);
       }
 
 	}
+
+  draw(){
+    
+  }
+
+  clone(){
+    super.clone();
+    console.log(this);
+  }
 
 }
 

@@ -19,7 +19,10 @@ class WebGLProgram{
 
 		//Initialisation de l'environnement
 		this.canvas = document.createElement('canvas');
-		this.gl = this.canvas.getContext("webgl", {stencil:true});
+		this.gl = this.canvas.getContext("webgl", {
+			stencil:true,
+			alpha: false 
+		});
 
 		//Default Shader
 		this.defaultShaderBuilder = new ShaderBuilder();
@@ -122,24 +125,6 @@ class WebGLProgram{
 	}
 
 	updateFrame(){
-
-		//Initialisation
-		const colors = this.scene.getClearColor();
-		this.gl.clearColor(colors[0], colors[1], colors[2], colors[3]);
-
-		this.gl.enable(this.gl.DEPTH_TEST); 
-		this.gl.depthFunc(this.gl.LEQUAL); 
-
-		this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT);
-		this.gl.useProgram(this.shaderProgram);
-
-		const attributs = this.actualShaderBuilder.getActiveAttributes();
-		for(let i = 0 ; i < attributs.length ; i++){
-			this.gl.enableVertexAttribArray(this.actualShaderBuilder.getPointer(attributs[i]));
-		}
-
-		//Shader uniforms
-		this.gl.uniformMatrix4fv(this.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(this.gl.canvas.clientWidth / this.gl.canvas.clientHeight));
 		
 		//Render
 		this.scene.render(this);

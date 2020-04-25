@@ -31,11 +31,12 @@ module.exports = function(){
 	cube.addMovement("rotate2", rotate2);
 
 	const texture = program.createImageTexture("/test2/text.png");
+	//const texture = program.createColorTexture(1,0,0,1);
 	cube.addTexture("text", texture);
 
 	const plan = new Plan();
 	plan.setPosition(0, 0, 0);
-	const texture2 = program.createColorTexture(0.2,0.2,0.2,1);
+	const texture2 = program.createColorTexture(0.0, 0.0, 0.2, 0.4);
 	const texture3 = program.createMirrorTexture();
 	plan.addTexture("color", texture2);
 	plan.addTexture("mirror", texture3);

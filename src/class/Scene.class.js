@@ -1,12 +1,13 @@
 const ShaderBuilder = require("./ShaderBuilder.class.js");
+const Renderer = require("./Renderer.class.js");
 
 class Scene{
 
 	constructor(){
 		this.clearColor = [0.0, 0.0, 0.0, 1.0];
-		this.shaderBuilder = null;
 		this.shaderActif = false;
 		this.shaderBuilder = new ShaderBuilder();
+		this.renderer = new Renderer(this);
 		this.activeCamera = null;
 		this.cameras = [];
 		this.objects = [];
@@ -15,6 +16,10 @@ class Scene{
 
 	getCamera(){
 		return this.activeCamera;
+	}
+
+	setRenderer(renderer){
+		this.renderer = renderer;
 	}
 
 	setCamera(name){
@@ -70,9 +75,39 @@ class Scene{
 	}
 
 	render(webGLProgram){
-		const activeAttributs = webGLProgram.getShaderBuilder().getActiveAttributes();
-		for(let i in this.objects){
-			this.objects[i].render(webGLProgram, activeAttributs);
+
+		this.renderer.render(webGLProgram);
+
+	}
+
+  clone(objectsToRemove){
+      const neww = new this.constructor();
+      neww.clearColor = this.clearColor.slice();
+      neww.shaderBuilder = this.shaderBuilder;
+      neww.shaderActif = false;
+      neww.renderer = this.renderer;
+      neww.activeCamera = this.activeCamera;
+      Object.assign(neww.cameras, this.cameras);
+      for(let obj in this.objects){
+      	if(!objectsToRemove.includes(this.objects[obj])){
+      		neww.objects[obj] = this.objects[obj].clone();
+      	}
+      }
+      Object.assign(neww.lights, this.lights);
+      return neww;
+  }
+
+	remove3DObjectByValue(object){
+		for(let obj in this.objects){
+			if(this.objects[obj] != object){
+				delete this.objects[obj];
+			}
+		}
+	}
+
+	incMirrorValue(){
+		for(let obj in this.objects){
+			this.objects[obj].incMirrorValue();
 		}
 	}
 
