@@ -11,23 +11,76 @@ module.exports = function(){
 	program.insertInBlock(document.getElementById("display"));
 	program.setUpdateOnResize(true);
 
-
 	const cube = new Cube();
-	cube.setSize(2);
-	cube.setPosition(0, 0, 0);
-	const rotate1 = new Rotate(360, [0,0,1], 1000, function(){
+	cube.setSize(1);
+	cube.setPosition(-1, 0, 2);
+	const texture = program.createImageTexture("/test3/text2.png");
+	cube.addTexture("color", texture);
+	cube.setOpacity(0.3);
+
+	const cube2 = new Cube();
+	cube2.setSize(2);
+	cube2.setPosition(4, 1, -10);
+	const texture2 = program.createImageTexture("/test3/text.jpg");
+	cube2.addTexture("color", texture2);
+	cube2.setOpacity(0.7);
+
+	const cube3 = new Cube();
+	cube3.setSize(10);
+	cube3.setPosition(1, 1, -30);
+	const texture3 = program.createColorTexture(0, 0, 1, 0.7);
+	cube3.addTexture("color", texture3);
+
+	const test = new Rotate(-20, [0,1,1], 1, function(){});
+
+	const rotate1 = new Rotate(360, [0,1,0], 1000, function(){
 		rotate1.reset();
-	})
+	});
 	const rotate2 = new Rotate(360, [1,2,0], 1500, function(){
 		rotate2.reset();
-	})
+	});
+		const rotate3 = new Rotate(360, [0,0,1], 1000, function(){
+		rotate3.reset();
+	});
+	test.setPosition(0, 0, 0);
+	rotate1.setPosition(0, 0, 0);
+	rotate2.setPosition(0, 0, 0);
+	rotate3.setPosition(0, 0, 0);
 	cube.addMovement("rotate1", rotate1);
-	cube.addMovement("rotate2", rotate2);
+	cube2.addMovement("rotate2", rotate2);
+	cube3.addMovement("rotate3", rotate3);
+
+	test.start();
+	cube.addMovement("test", test);
 	rotate1.start();
 	rotate2.start();
+	rotate3.start();
+
+	const rotate4 = new Rotate(360, [1,0,1], 2000, function(){
+		rotate4.reset();
+	});
+	const rotate5 = new Rotate(360, [3,0,1], 2500, function(){
+		rotate5.reset();
+	});
+	const rotate6 = new Rotate(360, [2,0,0], 1200, function(){
+		rotate6.reset();
+	});
+	rotate4.setPosition(0, 0, 0);
+	rotate5.setPosition(0, 0, 0);
+	rotate6.setPosition(0, 0, 0);
+	cube.addMovement("rotate4", rotate4);
+	cube2.addMovement("rotate5", rotate5);
+	cube3.addMovement("rotate6", rotate6);
+	rotate4.start();
+	rotate5.start();
+	rotate6.start();
+
 
 	const scene = new Scene();
 	scene.add3DObject("cube", cube);
+	scene.add3DObject("cube2", cube2);
+	scene.add3DObject("cube3", cube3);
+
 	scene.setClearColor(0,0,0,1);
 	program.setScene(scene);
 
@@ -35,9 +88,10 @@ module.exports = function(){
 	camera.setType("perspective", {
 
 	});
-	camera.setPosition(0, 0, 9);
+	camera.setPosition(0, 0, 10);
 	scene.addCamera("main", camera);
 	scene.setCamera("main");
+
 
 	program.start();
 

@@ -3,10 +3,9 @@ const Movement = require("../Interfaces/Movement.class.js");
 
 class Scale extends Movement{
 
-	constructor(angle, axe, nbFrame, callback){
+	constructor(vec, nbFrame, callback){
 		super();
-		this.angle = Math.PI * (angle / 180);
-		this.axe = axe;
+		this.vec = vec;
 		this.nbFrame = nbFrame;
 		this.step = 0;
     this.positions = [0, 0, 0];
@@ -32,6 +31,10 @@ class Scale extends Movement{
 		this.positions = [x, y, z];
 	}
 
+	setScaleVec(x, y, z){
+		this.vec = [x, y, z];
+	}
+	
 	process(matrix, stepup){
 
 		if(stepup && this.started && this.step < this.nbFrame){
@@ -39,7 +42,7 @@ class Scale extends Movement{
 		}
 
 		glmatrix.mat4.translate(matrix, matrix, [this.positions[0], this.positions[1], this.positions[2]]);
-		glmatrix.mat4.rotate(matrix, matrix, this.angle * (this.step / this.nbFrame), this.axe);
+		glmatrix.mat4.scale(matrix, matrix, this.vec);
 		glmatrix.mat4.translate(matrix, matrix, [-this.positions[0], -this.positions[1], -this.positions[2]]);
 
 		//MOVEMENT COMPLETED

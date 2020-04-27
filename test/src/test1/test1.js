@@ -38,7 +38,7 @@ module.exports = function(){
 		[0,1,1,1], //Bas
 		[0,1,1,1] //Derriere
 	);
-	oeil1.setPosition(-0.6, 0.5, 1);
+	oeil1.setPosition(-0.6, 0.5, 0);
 	const oeil2 = new Cube();
 	oeil2.setSize(0.5);
 	oeil2.setColors([0,1,1,1], //Devant
@@ -48,22 +48,21 @@ module.exports = function(){
 		[0,1,1,1], //Bas
 		[0,1,1,1] //Derriere
 	);
-	oeil2.setPosition(0.6, 0.5, 1);
+	oeil2.setPosition(0.6, 0.5, 0);
 
 	const yeux = new Object3DGroup();
 	yeux.add3DObject("oeil1", oeil1);
 	yeux.add3DObject("oeil2", oeil2);
+	yeux.setPosition(0, 0, 1);
 	const moveOeil1 = new Rotate(360, [0, 0, 1], 200, function(){
 		moveOeil1.reset();
 	});
 	oeil1.addMovement("move", moveOeil1);
-	moveOeil1.setPosition(-0.6, 0.5, 1);
 	moveOeil1.start();
 	const moveOeil2 = new Rotate(-360, [0, 0, 1], 200, function(){
 		moveOeil2.reset();
 	});
 	oeil2.addMovement("move", moveOeil2);
-	moveOeil2.setPosition(0.6, 0.5, 1);
 	moveOeil2.start();
 
 	//Bouche
@@ -76,7 +75,7 @@ module.exports = function(){
 		[1,1,1,1], //Bas
 		[1,1,1,1] //Derriere
 	);
-	dent1.setPosition(-0.25, -0.5, 1);
+	dent1.setPosition(-0.25, 0, 0);
 	const dent2 = new Cube();
 	dent2.setSize(0.1);
 	dent2.setColors([1,1,1,1], //Devant
@@ -86,7 +85,7 @@ module.exports = function(){
 		[1,1,1,1], //Bas
 		[1,1,1,1] //Derriere
 	);
-	dent2.setPosition(0, -0.5, 1);
+	dent2.setPosition(0, 0, 0);
 	const dent3 = new Cube();
 	dent3.setSize(0.1);
 	dent3.setColors([1,1,1,1], //Devant
@@ -96,17 +95,17 @@ module.exports = function(){
 		[1,1,1,1], //Bas
 		[1,1,1,1] //Derriere
 	);
-	dent3.setPosition(0.25, -0.5, 1);
+	dent3.setPosition(0.25, 0, 0);
 
 	const dents = new Object3DGroup();
 	dents.add3DObject("dent1", dent1);
 	dents.add3DObject("dent2", dent2);
 	dents.add3DObject("dent3", dent3);
+	dents.setPosition(0, -0.5, 1);
 	const moveDents = new Rotate(360, [0, 0, 1], 120, function(){
 		moveDents.reset();
 	});
 	dents.addMovement("move", moveDents);
-	moveDents.setPosition(0, -0.5, 1);
 	moveDents.start();
 
 	const group = new Object3DGroup();

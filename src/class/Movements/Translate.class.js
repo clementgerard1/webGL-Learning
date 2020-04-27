@@ -26,14 +26,24 @@ class Translate extends Movement{
 		this.finished = false;
 	}
 
+	setTranslationVec(x, y, z){
+		this.vec = [x, y, z];
+	}
+
+	setPosition(x, y, z){
+		this.positions = [x, y, z];
+	}
+
 	process(matrix, stepup){
 
 		if(stepup && this.started && this.step < this.nbFrame){
 			this.step++;
 		}
-		const tempVec = glmatrix.vec3.create();
-		glmatrix.vec3.scale(tempVec, this.vec, this.step / this.nbFrame);
-		glmatrix.mat4.translate(matrix, matrix, tempVec);
+
+		glmatrix.mat4.translate(matrix, matrix, [this.positions[0], this.positions[1], this.positions[2]]);
+		glmatrix.mat4.translate(matrix, matrix, this.vec);
+		glmatrix.mat4.translate(matrix, matrix, [-this.positions[0], -this.positions[1], -this.positions[2]]);
+
 		//MOVEMENT COMPLETED
 		if(!this.finished && this.step == this.nbFrame){
 			this.finished = true;
@@ -43,4 +53,5 @@ class Translate extends Movement{
 	}
 	
 }
+
 module.exports = Translate;

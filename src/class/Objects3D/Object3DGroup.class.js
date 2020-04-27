@@ -4,39 +4,13 @@ const glmatrix = require("../../../node_modules/gl-matrix/gl-matrix-min.js");
 class Object3DGroup extends Object3D{
 
 	constructor(){
-		super();
-		this.centerPosition = [0, 0, 0];
-		this.movements = [];
+    super();
 		this.objects = [];
 		this.bufferFunctions = {
 			"position" : this._sendVertexPosition,
 			"color" : this._sendVertexColor,
 		}
 	}
-
-	addMovement(name, movement){
-      this.movements[name] = movement;
-  }
-
-  removeMovement(name){
-      delete this.movements[name];
-  }
-
-  getNbMovements(){
-      return Object.keys(this.movements).length;
-  }
-
-  getMovements(){
-      return this.movements;
-  }
-
-	setPosition(x, y, z){
-		this.centerPosition = [x, y, z];
-	}
-
-  getPosition(){
-    return this.centerPosition;
-  }
 
 	add3DObject(name, object){
 		this.objects[name] = object;
@@ -46,8 +20,40 @@ class Object3DGroup extends Object3D{
 		delete this.objects[name];
 	}
 
-	render(transformsCollection, base){
+/*  updatePosition(){
+    let nb = 0;
+    let posX = 0;
+    let posY = 0;
+    let posZ = 0;
+    for(let obj in this.objects){
+      const p = this.objects[obj].getPosition();
+      posX += p[0];
+      posY += p[1];
+      posZ += p[2];
+      nb++;
+    }
 
+    this.setPosition(posX / nb, posY / nb, posZ / nb);
+  }
+
+  getPosition(){
+    this.updatePosition();
+    return super.getPosition();
+  }*/
+
+  getAllObjects(r){
+    for(let obj in this.objects){
+      if(this.objects[obj] instanceof Object3DGroup){
+        this.objects[obj].getAllObjects(r);
+      }else{
+        r[obj] = this.objects[obj];
+      }
+    }
+  }
+
+	render(transformsCollection, base){
+      //this.updatePosition();
+      
       //Local transformation
       //base = matrice héritéé d'un groupe d'objet
       let processedMatrix;
@@ -80,8 +86,6 @@ class Object3DGroup extends Object3D{
   }
 
   clone(){
-    super.clone();
-    console.log(this);
   }
 
 }

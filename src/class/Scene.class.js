@@ -1,5 +1,6 @@
 const ShaderBuilder = require("./ShaderBuilder.class.js");
 const Renderer = require("./Renderer.class.js");
+const Object3DGroup = require("./Objects3D/Object3DGroup.class.js");
 
 class Scene{
 
@@ -28,6 +29,21 @@ class Scene{
 
 	addCamera(name, camera){
 		this.cameras[name] = camera;
+		if(this.activeCamera == null){
+			this.activeCamera = this.cameras[name];
+		}
+	}
+
+	getAllObjects(){
+		const r = [];
+		for(let obj in this.objects){
+			if(this.objects[obj] instanceof Object3DGroup){
+				this.objects[obj].getAllObjects(r);
+			}else{
+				r[obj] = this.objects[obj];
+			}
+		}
+		return r;
 	}
 
 	removeCamera(name){

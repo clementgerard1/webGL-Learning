@@ -7,8 +7,8 @@ class Camera extends Movable{
 
 	constructor(){
 		super();
-		this.position = glmatrix.vec4.fromValues(0, 0, 0, 1);
-		this.direction = glmatrix.vec4.fromValues(0, 0, 1, 1);
+		this.position = [0, 0, 0];
+		this.direction = [0, 0, 1];
 		this.fixed = false;
 		this.type = "perspective";
 		this.orthoSettings = {
@@ -36,11 +36,11 @@ class Camera extends Movable{
 	}
 
 	getPosition(){
-		return [this.position[0], this.position[1], this.position[2], this.position[3]];
+		return this.position;
 	}
 
 	setPosition(x, y, z){
-		this.position = glmatrix.vec4.fromValues(x, y, z, 1);
+		this.position = [x, y , z];
 	}
 
 	setType(name, args){

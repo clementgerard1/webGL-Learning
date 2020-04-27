@@ -2,6 +2,13 @@ const glmatrix = require("../../node_modules/gl-matrix/gl-matrix-min.js");
 
 class Utils{
 
+	static nextID=-1;
+
+	static newID(){
+		this.nextID = this.nextID + 1;
+		return this.nextID;
+	}
+
 	static orthoProjectPlane(point, pointPlan, vec1, vec2){
 		let normal = glmatrix.vec3.create();
 		glmatrix.vec3.cross(normal, vec1, vec2);
@@ -18,12 +25,21 @@ class Utils{
 
 	}
 
-	static newVec(point1, point2){
+	static newVec3(point1, point2){
 		const p1 = glmatrix.vec3.create();
 		glmatrix.vec3.scale(p1, point1, -1);
 		const v3 = glmatrix.vec3.create();
 		glmatrix.vec3.add(v3, point2, p1);
 		return v3; 
+	}
+
+	static newVec4(point1, point2){
+		const p1 = glmatrix.vec4.create();
+		glmatrix.vec4.scale(p1, point1, -1);
+		const v4 = glmatrix.vec4.create();
+		glmatrix.vec4.add(v4, point2, p1);
+		v4[3] = 1;
+		return v4; 
 	}
 
 	static symPlane(point, planePoint, planeVec1, planeVec2){
@@ -33,6 +49,10 @@ class Utils{
     const result = glmatrix.vec3.create();
     glmatrix.vec3.add(result, point, vec);
     return result;
+	}
+
+	static getCentroid(vec1, vec2, vec3){
+		return [ (vec1[0] + vec2[0] + vec3[0]) / 3 , (vec1[1] + vec2[1] + vec3[1]) / 3 , (vec1[2] + vec2[2] + vec3[2]) / 3 ];
 	}
 
 }

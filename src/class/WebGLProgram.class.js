@@ -43,7 +43,7 @@ class WebGLProgram{
 
 	createImageTexture(src){
 		const texture = new ImageTexture(this, src);
-		return texture.getTexture();
+		return texture;
 	}
 
 	createMirrorTexture(){
@@ -53,7 +53,7 @@ class WebGLProgram{
 
 	createColorTexture(r, g, b, a){
 		const texture = new ColorTexture(this, r, g, b, a);
-		return texture.getTexture();
+		return texture;
 	}
 
 	setUpdateOnResize(bool){

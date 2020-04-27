@@ -29,6 +29,7 @@ class ShaderBuilder{
 		//Fragment Shader Uniform
 		this.fragmentUniforms = {
 			"texture" : true,// ALWAYS TRUE
+			"opacity" : true,
 		}
 
 		this.infos = {
@@ -55,6 +56,10 @@ class ShaderBuilder{
 			"texture" : {
 				"type" : "uniform sampler2D",
 				"name" : "uSampler",
+			},
+			"opacity" : {
+				"type" : "uniform highp float",
+				"name" : "uOpacity",
 			},
 			"textureCoordonnees" : {
 				"nbDatas" : 2,
@@ -91,6 +96,7 @@ class ShaderBuilder{
 			"mirrorVec1" : null,
 			"mirrorVec2" : null,
 			"mirrorPoint" : null,
+			"opacity" : null,
 			
 		}
 
@@ -308,6 +314,9 @@ class ShaderBuilder{
 				this.fragmentSrc += "gl_FragColor = " + this.infos["color"].varyingName + ";";
 			}else if(this.fragmentAttributes["textureCoordonnees"]){
 				this.fragmentSrc += "gl_FragColor = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
+			}
+			if(this.fragmentUniforms["opacity"]){
+				this.fragmentSrc += "gl_FragColor.a = gl_FragColor.a * " + this.infos["opacity"].name + ";";
 			}
 
 		this.fragmentSrc += "}";

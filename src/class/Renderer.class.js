@@ -5,53 +5,97 @@ class Renderer{
 		this.scene = scene;
 		this.transforms = [];
 		this.init = true;
-
+		this.resetConfigAtEnd = false;
+		this.memory = [];
 	}
 
 	render(webGLProgram){
+		this.memory = [];
+
+		if(this.resetConfigAtEnd){
+			this._stateMemory(webGLProgram);
+		}
 
 		if(this.init){
 			this._init(webGLProgram);
 		}
 
-		this.transforms = [];
-		const activeAttributs = webGLProgram.getShaderBuilder().getActiveAttributes();
-		for(let i in this.scene.objects){
-			this.scene.objects[i].render(this.transforms);
-		}
-		for(let i = 0 ; i < this.transforms.length ; i++){
-			this.transforms[i][0].draw(webGLProgram, activeAttributs, this.transforms[i][1]);
-		}
-
-
-
 		//Tri des objets
 		const opaques = [];
 		const transparents = [];
-		for(let i in this.scene.objects){
-			if(this.scene.objects[i].getTransparency() == 1){
-				opaques[opaques.length] = this.scene.objects[i];
+		const mirrors = [];
+		const sceneObjects = this.scene.getAllObjects();
+		for(let i in sceneObjects){
+			if(sceneObjects[i].isMirror()){
+				mirrors[mirrors.length] = sceneObjects[i];
+			}else if(sceneObjects[i].isTransparent()){
+				transparents[transparents.length] = sceneObjects[i];
 			}else{
-				transparents[transparents.length] = this.scene.objects[i];
+				opaques[opaques.length] = sceneObjects[i];
 			}
 		}
 
 		//Configuration (si transparent non vide)
-		if(transparents.length != 0){
+		if(transparents.length != 0 || mirrors.length != 0){
 			webGLProgram.getContext().enable(webGLProgram.getContext().BLEND);
 			webGLProgram.getContext().blendFunc(webGLProgram.getContext().SRC_ALPHA, webGLProgram.getContext().ONE_MINUS_SRC_ALPHA);  
 		}else{
 			webGLProgram.getContext().disable(webGLProgram.getContext().BLEND);
 		}
 
-		//Tri des objets transparents
+		//RENDERING
+		this.transforms = [];
+		const activeAttributs = webGLProgram.getShaderBuilder().getActiveAttributes();
+		for(let obj in this.scene.objects){
+			this.scene.objects[obj].render(this.transforms);
+		}
 
-		//Affichage des objets
+		//Affichage des objets opaques
+		for(let i = 0 ; i < opaques.length ; i++){
+			this.transforms[opaques[i].id][0].draw(webGLProgram, activeAttributs, this.transforms[opaques[i].id][1], false);
+		}
+
+		//Affichage des mirroirs
+
+		webGLProgram.getContext().disable(webGLProgram.getContext().CULL_FACE);
 		
+		for(let i = 0 ; i < mirrors.length ; i++){
+			this.transforms[mirrors[i].id][0].draw(webGLProgram, activeAttributs, this.transforms[mirrors[i].id][1], false);
+		}
+
+		//Tri des objets transparent (CHANGER LA FORMULE DE TRI VOIR TEST2 QUAND VALIDE)
+		const that = this;
+		const cameraPosition = that.scene.getCamera().getPosition();
+		transparents.sort(function(elem1, elem2){
+			const distance1 = elem1.getDistance(cameraPosition[0], cameraPosition[1], cameraPosition[2], that.transforms[elem1.id][1]);
+			const distance2 = elem2.getDistance(cameraPosition[0], cameraPosition[1], cameraPosition[2], that.transforms[elem2.id][1]);
+			if(distance1 > distance2){
+				return -1;
+			}else{
+				return 1;
+			}
+		});
+
+		//Affichage des objets transparents
+		for(let i = 0 ; i < transparents.length ; i++){
+			this.transforms[transparents[i].id][0].draw(webGLProgram, activeAttributs, this.transforms[transparents[i].id][1], true);
+		}
+
+		webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
+
+
+		if(this.resetConfigAtEnd){
+			this._resetConfigEnd(webGLProgram);
+		}
+
 	}
 
 	setInitialisation(bool){
 		this.init = bool;
+	}
+
+	setResetConfigAtEnd(bool){
+		this.resetConfigAtEnd = bool;
 	}
 
 	_init(webGLProgram){
@@ -62,6 +106,8 @@ class Renderer{
 
 		gl.enable(gl.DEPTH_TEST); 
 		gl.depthFunc(gl.LEQUAL); 
+
+		webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
 
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.useProgram(webGLProgram.shaderProgram);
@@ -74,6 +120,37 @@ class Renderer{
 		//Shader uniforms
 		gl.uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(gl.canvas.clientWidth / gl.canvas.clientHeight));
 		
+	}
+
+	_stateMemory(webGLProgram){
+		this.memory["clearColor"] = webGLProgram.getContext().getParameter(webGLProgram.getContext().COLOR_CLEAR_VALUE);
+		this.memory["blend"] = webGLProgram.getContext().isEnabled(webGLProgram.getContext().BLEND);
+		this.memory["blendFuncSrc"] = webGLProgram.getContext().getParameter(webGLProgram.getContext().BLEND_SRC_RGB);
+		this.memory["blendFuncDst"] = webGLProgram.getContext().getParameter(webGLProgram.getContext().BLEND_DST_RGB);
+		this.memory["depthTest"] = webGLProgram.getContext().isEnabled(webGLProgram.getContext().DEPTH_TEST);
+		this.memory["depthFunc"] = webGLProgram.getContext().getParameter(webGLProgram.getContext().DEPTH_FUNC);
+		this.memory["cullFace"] = webGLProgram.getContext().isEnabled(webGLProgram.getContext().CULL_FACE);
+	}
+
+	_resetConfigEnd(webGLProgram){
+		webGLProgram.getContext().clearColor(this.memory["clearColor"][0], this.memory["clearColor"][1], this.memory["clearColor"][2], this.memory["clearColor"][3]);
+		if(this.memory["blend"]){
+			webGLProgram.getContext().enable(webGLProgram.getContext().BLEND);
+		}else{
+			webGLProgram.getContext().disable(webGLProgram.getContext().BLEND);
+		}
+		webGLProgram.getContext().blendFunc(this.memory["blendFuncSrc"], this.memory["blendFuncDst"]);
+		if(this.memory["depthTest"]){
+			webGLProgram.getContext().enable(webGLProgram.getContext().DEPTH_TEST);
+		}else{
+			webGLProgram.getContext().disable(webGLProgram.getContext().DEPTH_TEST);
+		}
+		webGLProgram.getContext().depthFunc(this.memory["depthFunc"]); 
+		if(this.memory["cullFace"]){
+			webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
+		}else{
+			webGLProgram.getContext().disable(webGLProgram.getContext().CULL_FACE);
+		}
 	}
 
 }

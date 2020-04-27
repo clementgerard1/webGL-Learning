@@ -4,12 +4,13 @@ const Utils = require("../Utils.class.js");
 const MirrorTexture = require("../Textures/MirrorTexture.class");
 const ColorTexture = require("../Textures/ColorTexture.class");
 const Translate = require("../Movements/Translate.class.js");
+const Scale = require("../Movements/Scale.class.js");
+const Rotate = require("../Movements/Rotate.class.js");
+
 class Cube extends Object3D {
 
 	constructor(){
 		super();
-		this.size = 1;
-		this.centerPosition = [0, 0, 0];
         this.colors = [
             0., 0., 1., 1., //Face avant
             0., 0., 1., 1.,
@@ -40,17 +41,56 @@ class Cube extends Object3D {
             1., 0., 0., 1.,
             1., 0., 0., 1.,
             1., 0., 0., 1.
+        ];
+
+        //Position
+        this.positions = [
+            -0.5, -0.5, 0.5,//Face avant
+            -0.5, 0.5, 0.5,
+            0.5, 0.5, 0.5,
+            0.5, -0.5, 0.5,
+
+            -0.5, -0.5, -0.5,//Face gauche
+            -0.5, 0.5, -0.5,
+            -0.5, 0.5, 0.5,
+            -0.5, -0.5, 0.5,
+
+            -0.5, 0.5, -0.5,//Face haute
+            0.5, 0.5, -0.5,
+            0.5, 0.5, 0.5,
+            -0.5, 0.5, 0.5,
+
+            0.5, 0.5, -0.5,//Face droite
+            0.5, -0.5, -0.5,
+            0.5, -0.5, 0.5,
+            0.5, 0.5, 0.5,
+
+            0.5, -0.5, -0.5,//Face dessous
+            -0.5, -0.5, -0.5,
+            -0.5, -0.5, 0.5,
+            0.5, -0.5, 0.5,
+
+            0.5, 0.5, -0.5,//Face derriere
+            -0.5, 0.5, -0.5,
+            -0.5, -0.5, -0.5,
+            0.5, -0.5, -0.5
         ]; 
-        this.movements = [];
-        this.textures = [];
+
+        //Scale
+        this.size = 1;
+        this.sizeScale = new Scale([this.size/2,this.size/2,this.size/2], 1, function(){});
+        this.sizeScale.setPosition(0, 0, 0);
+        this.addMovement("size", this.sizeScale);
+        this.sizeScale.start();
+        
 		this.indexes = [
-	    0,  1,  2,      0,  2,  3,    // avant
-	    4,  5,  6,      4,  6,  7,    // gauche
-	    8,  9,  10,     8,  10, 11,   // haut
-	    12, 13, 14,     12, 14, 15,   // bas
-	    16, 17, 18,     16, 18, 19,   // dessous
-	    20, 21, 22,     20, 22, 23,   // derriere
-	      ];
+            0,  2,  1,      0,  3,  2,    // avant
+            4,  6,  5,      4,  7,  6,    // gauche
+            8,  10,  9,     8,  11, 10,   // haut
+            12, 14, 13,     12, 15, 14,   // bas
+            16, 18, 17,     16, 19, 18,   // dessous
+            20, 22, 21,     20, 23, 22,   // derriere
+	    ];
         this.textureCoordonnees = [
             0., 0.,
             0., 1.,
@@ -90,51 +130,9 @@ class Cube extends Object3D {
 		}
 	}
 
-    addMovement(name, movement){
-        this.movements[name] = movement;
-    }
-
-    removeMovement(name){
-        delete this.movements[name];
-    }
-
-    addTexture(name, texture){
-        this.textures[name] = texture;
-        this._checkTransparency();
-    }
-
-    removeTexture(name){
-        delete this.textures[name];
-        this._checkTransparency();
-    }
-
-    _checkTransparency(){
-        this.transparency = false;
-        for(let text in this.textures){
-            if(this.textures[text] instanceof MirrorTexture){
-                this.transparency = true;
-            }
-            if(this.textures[text] instanceof ColorTexture && this.textures[text].getRGBA()[3] < 1){
-                this.transparency = true;
-            }
-            //Gérer le cas des ImageTexture Transparentes
-        }
-    }
-
-    getNbMovements(){
-        return Object.keys(this.movements).length;
-    }
-
-    getMovements(){
-        return this.movements;
-    }
-
-	setPosition(x, y, z){
-		this.centerPosition = [x, y, z];
-	}
-
 	setSize(s){
 		this.size = s;
+        this.sizeScale.setScaleVec(s, s, s);
 	}
 
     setColors(devant, gauche, haut, droite, bas, derriere){
@@ -156,7 +154,7 @@ class Cube extends Object3D {
         for(let text in that.textures){
             if(!(that.textures[text] instanceof MirrorTexture)){
                 webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
-                webGLProgram.getContext().bindTexture(webGLProgram.getContext().TEXTURE_2D, that.textures[text]);
+                webGLProgram.getContext().bindTexture(webGLProgram.getContext().TEXTURE_2D, that.textures[text].getTexture());
                 webGLProgram.getContext().uniform1i(webGLProgram.getShaderBuilder().getPointer("texture"), false, 0);
 
 
@@ -190,40 +188,8 @@ class Cube extends Object3D {
             0
         );
 
-        //Insérer les données
-        const positions = [
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] + (that.size/2),//Face avant
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] + (that.size/2),
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] + (that.size/2),
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] + (that.size/2),
 
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] - (that.size/2),//Face gauche
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] - (that.size/2),
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] + (that.size/2),
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] + (that.size/2),
-
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] - (that.size/2),//Face haute
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] - (that.size/2),
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] + (that.size/2),
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] + (that.size/2),
-
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] - (that.size/2),//Face droite
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] - (that.size/2),
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] + (that.size/2),
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] + (that.size/2),
-
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] - (that.size/2),//Face dessous
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] - (that.size/2),
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] + (that.size/2),
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] + (that.size/2),
-
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] - (that.size/2),//Face derriere
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] + (that.size/2), that.centerPosition[2] - (that.size/2),
-        	that.centerPosition[0] - (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] - (that.size/2),
-        	that.centerPosition[0] + (that.size/2), that.centerPosition[1] - (that.size/2), that.centerPosition[2] - (that.size/2)
-        ]; 
-
-        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(positions), webGLProgram.getContext().STATIC_DRAW);
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.positions), webGLProgram.getContext().STATIC_DRAW);
 	}
 
 	_sendVertexColor(webGLProgram, that){
@@ -241,30 +207,13 @@ class Cube extends Object3D {
         webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.colors), webGLProgram.getContext().STATIC_DRAW);
     }
 
-	render(transformsCollection, base){
-        //Local transformation
-        //base = matrice héritéé d'un groupe d'objet
-        let processedMatrix;
-        const stepUp = this.getMirrorValue() == 0;
-        if(base == null || typeof base == "undefined"){
-            processedMatrix = glmatrix.mat4.create();
-            for(let move in this.movements){
-                this.movements[move].process(processedMatrix, stepUp);
-            }
-        }else{
-            processedMatrix = base;
-            for(let move in this.movements){
-                this.movements[move].process(processedMatrix, stepUp);
-            }
-            
+    draw(webGLProgram, attributs, processedMatrix, orderTriangles){
+        super.draw(webGLProgram);
+
+        if(typeof orderTriangles != "undefined" && orderTriangles){
+            this._orderPositionsByDistance(webGLProgram.getScene().getCamera().getPosition(), processedMatrix);
         }
 
-        transformsCollection[transformsCollection.length] = [this, processedMatrix];
-
-	}
-
-    draw(webGLProgram, attributs, processedMatrix){
-        super.draw(webGLProgram);
         for(let i = 0 ; i < attributs.length ; i++){
             this.renderAttribute(attributs[i], webGLProgram);
         }
@@ -277,14 +226,21 @@ class Cube extends Object3D {
 
         //Draw
         webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+   
+    }
 
+    getDistance(x, y, z, transform){
+        const vec1 = glmatrix.vec3.fromValues(x, y, z);
+        let vec2 = glmatrix.vec3.create();
+        glmatrix.vec3.transformMat4(vec2, vec2, transform);
+        return glmatrix.vec3.distance(vec1, vec2);
     }
 
     clone(){
         const neww = new this.constructor();
         super.clone(neww);
         neww.size = this.size;
-        neww.centerPosition = this.centerPosition.slice();
+        neww.position = this.position.slice();
         neww.colors = this.colors.slice();
         Object.assign(neww.movements, this.movements);
         Object.assign(neww.textures, this.textures);

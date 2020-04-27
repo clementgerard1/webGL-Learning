@@ -17,40 +17,44 @@ module.exports = function(){
 
 	const cube = new Cube();
 	cube.setSize(2);
-	cube.setPosition(6, 0, 0);
-	const rotate1 = new Rotate(360, [0,0,1], 1000, function(){
+	cube.setPosition(0, 5, 0);
+	const rotate1 = new Rotate(360, [0,3,1], 1200, function(){
 		rotate1.reset();
 	})
-	const rotate2 = new Rotate(360, [1,2,0], 1500, function(){
+	const rotate2 = new Rotate(360, [1,2,0], 700, function(){
 		rotate2.reset();
 	})
 
-	rotate1.setPosition(5, 0, 0);
-	rotate2.setPosition(7, 0, 0);
+	rotate1.setPosition(-3, 3, 0);
+	rotate2.setPosition(-4, -1, 0);
 	cube.addMovement("rotate1", rotate1);
 	cube.addMovement("rotate2", rotate2);
 
 	const texture = program.createImageTexture("/test2/text.png");
-	//const texture = program.createColorTexture(1,0,0,1);
 	cube.addTexture("text", texture);
 
 	const plan = new Plan();
 	plan.setPosition(0, 0, 0);
-	const texture2 = program.createColorTexture(0.0, 0.0, 0.2, 0.4);
+	const texture2 = program.createColorTexture(0.0, 0.0, 0.8, 0.4);
 	const texture3 = program.createMirrorTexture();
 	plan.addTexture("color", texture2);
 	plan.addTexture("mirror", texture3);
-	const rotate =  new Rotate(80, [1, 1, 0], 1, function(){
+	const rotate =  new Rotate(45, [0, 1, 0], 1, function(){
+
+	});
+	const rotatee =  new Rotate(-65, [1, 0, 0], 1, function(){
 
 	});
 	rotate.setPosition(0, 0, 0);
 	plan.addMovement("rotate", rotate);
-	plan.setSize(20, 20);
+	plan.addMovement("rotate2", rotatee);
+	plan.setSize(12, 12);
 
 
 	rotate1.start();
 	rotate2.start();
 	rotate.start();
+	rotatee.start();
 
 	scene.add3DObject("cube", cube);
 	scene.add3DObject("mirror", plan);
@@ -61,7 +65,7 @@ module.exports = function(){
 	camera.setType("perspective", {
 		"size" : 30
 	});
-	camera.setPosition(0, 0, 30);
+	camera.setPosition(0, 0, 20);
 	scene.addCamera("main", camera);
 	scene.setCamera("main");
 
