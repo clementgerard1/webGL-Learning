@@ -1,6 +1,7 @@
 const test1 = require("./test1/test1.js");
 const test2 = require("./test2/test2.js");
 const test3 = require("./test3/test3.js");
+const test4 = require("./test4/test4.js");
 
 const str = window.location.href.split("/");
 if(str[str.length-1] != ""){

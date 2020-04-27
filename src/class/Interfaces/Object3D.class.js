@@ -3,6 +3,7 @@ const ColorTexture = require("../Textures/ColorTexture.class");
 const Translate = require("../Movements/Translate.class.js");
 const Scale = require("../Movements/Scale.class.js");
 const Rotate = require("../Movements/Rotate.class.js");
+const LookAt = require("../Movements/LookAt.class.js");
 const Utils = require("../Utils.class");
 const glmatrix = require("../../../node_modules/gl-matrix/gl-matrix-min.js");
 
@@ -14,6 +15,7 @@ class Object3D{
 		this.opacity = 1;
 		this.mirror = false;
 		this.mirrored = 0;
+    this.direction = [0, 0, 1];
 
 		this.movements = [];
 
@@ -87,7 +89,11 @@ class Object3D{
 	}
 
 	getPosition(){
-		return this.position;
+    const temp = [];
+    this.render(temp);
+    const position = glmatrix.vec3.fromValues(0, 0, 0);
+    glmatrix.vec3.transformMat4(position, position, temp[this.id][1]);
+    return position;
 	}
 
 	isTransparent(){
@@ -110,6 +116,7 @@ class Object3D{
 		neww.mirrored = this.mirrored;
 		neww.transparency = this.transparency;
 		neww.opacity = this.opacity;
+    neww.direction = this.direction.slice();
 	}
 
 	incMirrorValue(){
@@ -143,6 +150,12 @@ class Object3D{
         for(let move in this.movements){
             if(this.movements[move] instanceof Rotate){
                 this.movements[move].process(processedMatrix, stepUp);
+            }
+        }
+        //LookAt
+        for(let move in this.movements){
+            if(this.movements[move] instanceof LookAt){
+                this.movements[move].process(processedMatrix, this);
             }
         }
         //Scale

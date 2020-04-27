@@ -122,7 +122,6 @@ module.exports = function(){
 	camera.setPosition(0, 0, 9);
 	scene.addCamera("main", camera);
 	scene.setCamera("main");
-	camera.setFixation(tete);
 
 	const light = new AmbientLight();
 	light.setPower(0.8);

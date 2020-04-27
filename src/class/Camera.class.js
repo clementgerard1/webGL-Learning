@@ -1,15 +1,28 @@
 const glmatrix = require("../../node_modules/gl-matrix/gl-matrix-min.js");
 const Movable = require("./Interfaces/Movable.class.js")
 const Object3D = require("./Interfaces/Object3D.class.js");
+const Translate = require("./Movements/Translate.class.js");
+const Scale = require("./Movements/Scale.class.js");
+const Rotate = require("./Movements/Rotate.class.js");
+const LookAt = require("./Movements/LookAt.class.js");
 
 
 class Camera extends Movable{
 
 	constructor(){
 		super();
+
+		this.movements = [];
+
+		//Position
 		this.position = [0, 0, 0];
+		this.positionTranslate = new Translate(this.position, 1, function(){});
+    this.positionTranslate.setPosition(0, 0, 0);
+    this.positionTranslate.setTranslationVec(0, 0, 0);
+    this.addMovement("position", this.positionTranslate);
+    this.positionTranslate.start();
+
 		this.direction = [0, 0, 1];
-		this.fixed = false;
 		this.type = "perspective";
 		this.orthoSettings = {
 			"size" : 6,
@@ -23,24 +36,32 @@ class Camera extends Movable{
 		};
 	}
 
-	//val = false || val = 3DObject || val = [x, y, z]
-	setFixation(val){
-		if(val == false){
-			this.fixed = false;
-		}else if(val.prototype instanceof Object3D){
-			const positions = val.getPosition();
-			this.fixed = [positions[0], positions[1], positions[2]];
-		}else if(typeof val == "array"){
-			this.fixed = [val[0], val[1], val[2]];
-		}
-	}
+	addMovement(name, movement){
+      this.movements[name] = movement;
+  }
+
+  removeMovement(name){
+      delete this.movements[name];
+  }
+
+  getNbMovements(){
+      return Object.keys(this.movements).length;
+  }
+
+  getMovements(){
+      return this.movements;
+  }
 
 	getPosition(){
-		return this.position;
+		const transform = this.render();
+		const position = glmatrix.vec3.create();
+		glmatrix.vec3.transformMat4(position, this.position, transform);
+		return position;
 	}
 
 	setPosition(x, y, z){
-		this.position = [x, y , z];
+		this.position = [x, y, z];
+		this.positionTranslate.setTranslationVec(x, y, z);
 	}
 
 	setType(name, args){
@@ -57,18 +78,47 @@ class Camera extends Movable{
 		}
 	}
 
-	getMatrix(ratio){
-		const result = glmatrix.mat4.create();
-		if(this.type == "orthogonal"){
-			glmatrix.mat4.ortho(result, -(this.orthoSettings["size"] / 2) * ratio, (this.orthoSettings["size"] / 2) * ratio, -(this.orthoSettings["size"] / 2) , (this.orthoSettings["size"] / 2), this.orthoSettings["near"], this.orthoSettings["far"]);
-		}else if(this.type == "perspective"){
-			glmatrix.mat4.perspective(result, this.perspSettings["focal"] * (Math.PI / 180), ratio, this.perspSettings["near"], this.perspSettings["far"]);
-		}
-		const move = glmatrix.mat4.create();
-		glmatrix.mat4.translate(move, move, [-this.position[0], -this.position[1], -this.position[2]]);
+	render(){
+        //Local transformation
+        //base = matrice héritéé d'un groupe d'objet
 
-		glmatrix.mat4.multiply(result, result, move);
-		return result;
+        let processedMatrix = glmatrix.mat4.create();
+        const stepUp = true;
+
+        //Translate
+        for(let move in this.movements){
+            if(this.movements[move] instanceof Translate){
+                this.movements[move].process(processedMatrix, stepUp);
+            }
+        }
+        //Rotate
+        for(let move in this.movements){
+            if(this.movements[move] instanceof Rotate){
+                this.movements[move].process(processedMatrix, stepUp);
+            }
+        }
+
+        //LookAt
+        for(let move in this.movements){
+            if(this.movements[move] instanceof LookAt){
+                this.movements[move].process(processedMatrix, this);
+            }
+        }
+        return processedMatrix;
+	}
+
+	getMatrix(ratio){
+		const camera = glmatrix.mat4.create();
+		if(this.type == "orthogonal"){
+			glmatrix.mat4.ortho(camera, -(this.orthoSettings["size"] / 2) * ratio, (this.orthoSettings["size"] / 2) * ratio, -(this.orthoSettings["size"] / 2) , (this.orthoSettings["size"] / 2), this.orthoSettings["near"], this.orthoSettings["far"]);
+		}else if(this.type == "perspective"){
+			glmatrix.mat4.perspective(camera, this.perspSettings["focal"] * (Math.PI / 180), ratio, this.perspSettings["near"], this.perspSettings["far"]);
+		}
+
+		const transform = this.render();
+		glmatrix.mat4.invert(transform, transform);
+		glmatrix.mat4.multiply(camera, camera, transform);
+		return camera;
 
 	}
 
