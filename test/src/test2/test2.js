@@ -71,7 +71,10 @@ module.exports = function(){
 
 	program.start();
 
+	//scene.getRenderer().setScissor([0, 0, 400, 600]);
+
 	window.addEventListener('DOMContentLoaded', function(event){
+
 
 		
 

@@ -1,7 +1,7 @@
 class Renderer{
 
 	constructor(scene){
-
+		this.scissor = null;
 		this.scene = scene;
 		this.transforms = [];
 		this.init = true;
@@ -84,6 +84,7 @@ class Renderer{
 		webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
 
 
+
 		if(this.resetConfigAtEnd){
 			this._resetConfigEnd(webGLProgram);
 		}
@@ -96,6 +97,18 @@ class Renderer{
 
 	setResetConfigAtEnd(bool){
 		this.resetConfigAtEnd = bool;
+	}
+
+	setScissor(tab){
+		if(tab == null){
+			this.scissor = null;
+		}else{
+			this.scissor = tab;
+		}
+	}
+
+	getScissor(){
+		return this.scissor;
 	}
 
 	_init(webGLProgram){
@@ -111,6 +124,15 @@ class Renderer{
 
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.useProgram(webGLProgram.shaderProgram);
+
+		const scissor = this.getScissor();
+		if( scissor != null){
+			gl.enable(gl.SCISSOR_TEST);
+			gl.scissor(scissor[0], scissor[1], scissor[2], scissor[3]);
+			gl.getParameter(gl.SCISSOR_BOX);
+		}else{
+			gl.disable(gl.SCISSOR_TEST);
+		}
 
 		const attributs = webGLProgram.actualShaderBuilder.getActiveAttributes();
 		for(let i = 0 ; i < attributs.length ; i++){

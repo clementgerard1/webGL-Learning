@@ -127,7 +127,6 @@ module.exports = function(){
 	scene.addCamera("main", camera);
 	scene.setCamera("main");
 
-
 	program.start();
 
 	window.addEventListener('DOMContentLoaded', function(event){

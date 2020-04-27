@@ -23,6 +23,10 @@ class Scene{
 		this.renderer = renderer;
 	}
 
+	getRenderer(){
+		return this.renderer;
+	}
+
 	setCamera(name){
 		this.activeCamera = this.cameras[name];
 	}

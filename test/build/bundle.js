@@ -1440,6 +1440,7 @@ function () {
   function Renderer(scene) {
     _classCallCheck(this, Renderer);
 
+    this.scissor = null;
     this.scene = scene;
     this.transforms = [];
     this.init = true;
@@ -1539,6 +1540,20 @@ function () {
       this.resetConfigAtEnd = bool;
     }
   }, {
+    key: "setScissor",
+    value: function setScissor(tab) {
+      if (tab == null) {
+        this.scissor = null;
+      } else {
+        this.scissor = tab;
+      }
+    }
+  }, {
+    key: "getScissor",
+    value: function getScissor() {
+      return this.scissor;
+    }
+  }, {
     key: "_init",
     value: function _init(webGLProgram) {
       var gl = webGLProgram.getContext(); //Initialisation
@@ -1550,6 +1565,16 @@ function () {
       webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.useProgram(webGLProgram.shaderProgram);
+      var scissor = this.getScissor();
+
+      if (scissor != null) {
+        gl.enable(gl.SCISSOR_TEST);
+        gl.scissor(scissor[0], scissor[1], scissor[2], scissor[3]);
+        gl.getParameter(gl.SCISSOR_BOX);
+      } else {
+        gl.disable(gl.SCISSOR_TEST);
+      }
+
       var attributs = webGLProgram.actualShaderBuilder.getActiveAttributes();
 
       for (var i = 0; i < attributs.length; i++) {
@@ -1643,6 +1668,11 @@ function () {
     key: "setRenderer",
     value: function setRenderer(renderer) {
       this.renderer = renderer;
+    }
+  }, {
+    key: "getRenderer",
+    value: function getRenderer() {
+      return this.renderer;
     }
   }, {
     key: "setCamera",
@@ -2487,7 +2517,10 @@ function () {
     this.refreshId = null;
     this.scene = null;
     this.started = false;
-    this.updateOnResize = true;
+    this.updateOnResize = true; //FPS Counter
+
+    this.fpsCallback;
+    this.fpsLast;
     this._handleResize = this._handleResize.bind(this);
     this.updateFrame = this.updateFrame.bind(this); //Initialisation de l'environnement
 
@@ -2511,6 +2544,17 @@ function () {
   }, {
     key: "createFrameTexture",
     value: function createFrameTexture() {}
+  }, {
+    key: "enableFPSCounter",
+    value: function enableFPSCounter(callback) {
+      this.fpsCallback = callback;
+    }
+  }, {
+    key: "disableFPSCounter",
+    value: function disableFPSCounter() {
+      this.fpsCallback = null;
+      this.fpsLast = null;
+    }
   }, {
     key: "createImageTexture",
     value: function createImageTexture(src) {
@@ -2613,7 +2657,17 @@ function () {
   }, {
     key: "updateFrame",
     value: function updateFrame() {
-      //Render
+      if (this.fpsCallback != null) {
+        var now = new Date().getTime();
+
+        if (this.fpsLast != null) {
+          this.fpsCallback((1000 / (now - this.fpsLast)).toFixed(2));
+        }
+
+        this.fpsLast = now;
+      } //Render
+
+
       this.scene.render(this); //Next Frame
 
       if (this.started) {
@@ -2901,7 +2955,8 @@ module.exports = function () {
   camera.setPosition(0, 0, 20);
   scene.addCamera("main", camera);
   scene.setCamera("main");
-  program.start();
+  program.start(); //scene.getRenderer().setScissor([0, 0, 400, 600]);
+
   window.addEventListener('DOMContentLoaded', function (event) {});
 };
 },{"../class/Camera.class.js":1,"../class/Lights/AmbientLight.class.js":7,"../class/Movements/Rotate.class.js":9,"../class/Objects3D/Cube.class.js":12,"../class/Objects3D/Object3DGroup.class.js":13,"../class/Objects3D/Plan.class.js":14,"../class/Scene.class.js":16,"../class/WebGLProgram.class.js":23}],27:[function(require,module,exports){
@@ -3051,6 +3106,9 @@ module.exports = function () {
   var program = new WebGLProgram();
   program.insertInBlock(document.getElementById("display"));
   program.setUpdateOnResize(true);
+  program.enableFPSCounter(function (fps) {
+    console.log(fps);
+  });
   var scene = new Scene();
   scene.setClearColor(0, 0, 0, 1);
   program.setScene(scene);

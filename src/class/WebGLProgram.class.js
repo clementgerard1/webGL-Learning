@@ -13,6 +13,10 @@ class WebGLProgram{
 		this.scene = null;
 		this.started = false;
 		this.updateOnResize = true;
+
+		//FPS Counter
+		this.fpsCallback;
+		this.fpsLast;
 		
 		this._handleResize = this._handleResize.bind(this);
 		this.updateFrame = this.updateFrame.bind(this);
@@ -39,6 +43,15 @@ class WebGLProgram{
 
 	createFrameTexture(){
 
+	}
+
+	enableFPSCounter(callback){
+		this.fpsCallback = callback;
+	}
+
+	disableFPSCounter(){
+		this.fpsCallback = null;
+		this.fpsLast = null;
 	}
 
 	createImageTexture(src){
@@ -126,6 +139,14 @@ class WebGLProgram{
 
 	updateFrame(){
 		
+		if(this.fpsCallback != null){
+			const now = new Date().getTime();
+			if(this.fpsLast != null){
+				this.fpsCallback((1000 / (now - this.fpsLast)).toFixed(2)) ;
+			}
+			this.fpsLast = now;
+		}
+
 		//Render
 		this.scene.render(this);
 

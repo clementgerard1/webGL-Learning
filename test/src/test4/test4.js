@@ -12,6 +12,10 @@ module.exports = function(){
 	program.insertInBlock(document.getElementById("display"));
 	program.setUpdateOnResize(true);
 
+	program.enableFPSCounter(function(fps){
+		console.log(fps);
+	});
+
 	const scene = new Scene();
 
 	scene.setClearColor(0,0,0,1);
@@ -24,6 +28,7 @@ module.exports = function(){
 	camera.setPosition(0, 0, 10);
 	scene.addCamera("main", camera);
 	scene.setCamera("main");
+
 
 
 	program.start();
