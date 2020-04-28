@@ -10,13 +10,18 @@ class WebGLProgram{
 		this.container = null;
 		this.parentBlock = null;
 		this.refreshId = null;
-		this.scene = null;
+
+		this.scenes = [];
+
 		this.started = false;
 		this.updateOnResize = true;
 
 		//FPS Counter
+		this.fpsTime = 0;
+		this.fpsCount = 0;
 		this.fpsCallback;
 		this.fpsLast;
+		this.fpsDisplay = 1000;
 		
 		this._handleResize = this._handleResize.bind(this);
 		this.updateFrame = this.updateFrame.bind(this);
@@ -25,7 +30,7 @@ class WebGLProgram{
 		this.canvas = document.createElement('canvas');
 		this.gl = this.canvas.getContext("webgl", {
 			stencil:true,
-			alpha: false 
+			//alpha: false 
 		});
 
 		//Default Shader
@@ -35,18 +40,30 @@ class WebGLProgram{
 		//Variables
 		this.buffers = [];
 
+		this.updateProgram();
+
 	}
 
 	setTextureRenderer(bool){
 		this.actualShaderBuilder.setTextureRenderer(bool);
+		this.updateProgram();
 	}
 
 	createFrameTexture(){
 
 	}
 
-	enableFPSCounter(callback){
+	setFPSDisplayTime(fpsDisplayTime){
+		this.fpsDisplay = fpsDisplayTime;
+	}
+
+	enableFPSCounter(callback, fpsDisplayTime){
+		if(typeof fpsDisplayTime != "undefined"){
+			this.fpsDisplay = fpsDisplayTime;
+		}
 		this.fpsCallback = callback;
+		this.fpsTime = 0;
+		this.fpsCount = 0;
 	}
 
 	disableFPSCounter(){
@@ -86,9 +103,28 @@ class WebGLProgram{
 		return this.actualShaderBuilder;
 	}
 
-	setScene(scene){
-		this.scene = scene;
-		const previous = this.actualShader;
+	addScene(scene, i){
+		if(typeof i == "undefined"){
+			this.scenes[this.scenes.length] = scene;
+		}else{
+			this.scenes.splice(i, 0, scene);
+		}
+	}
+
+	removeScene(i){
+		if(typeof i == "undefined"){
+			i = 0;
+		}
+		this.scenes.splice(i, 1);
+	}
+
+	setScene(scene, i){
+
+		if(typeof i == "undefined"){
+			i = 0;
+		}
+		this.scenes[i] = scene;
+		/*const previous = this.actualShader;
 		if(this.scene.getShader() != null){
 			this.actualShader = this.scene.getShader();
 		}else{
@@ -97,12 +133,15 @@ class WebGLProgram{
 
 		if(previous != this.actualShader){
 			this.updateProgram();
-		}
+		}*/
 
 	}
 
-	getScene(){
-		return this.scene;
+	getScene(i){
+		if(typeof i == "undefined"){
+			i = 0;
+		}
+		return this.scenes[i];
 	}
 
 	insertInBlock(block){
@@ -116,7 +155,7 @@ class WebGLProgram{
 
 	updateProgram(){
 		//Création du programme
-		this.shaderProgram = this.actualShader.getShaderProgram(this.gl);
+		this.shaderProgram = this.actualShaderBuilder.getShaderProgram(this.gl);
 
 		//Création des buffers
 		this.buffers = [];
@@ -138,17 +177,28 @@ class WebGLProgram{
 	}
 
 	updateFrame(){
+
 		
 		if(this.fpsCallback != null){
 			const now = new Date().getTime();
 			if(this.fpsLast != null){
-				this.fpsCallback((1000 / (now - this.fpsLast)).toFixed(2)) ;
+				this.fpsTime += (now - this.fpsLast);
+				this.fpsCount++;
+				if(this.fpsTime > this.fpsDisplay){
+					this.fpsCallback((this.fpsCount * (1000 / this.fpsTime)).toFixed(2));
+					this.fpsTime = 0;
+					this.fpsCount = 0;
+				}
 			}
+
 			this.fpsLast = now;
+
 		}
 
 		//Render
-		this.scene.render(this);
+		for(let i = 0 ; i < this.scenes.length ; i++){
+			this.scenes[i].render(this);
+		}
 
 		//Next Frame
 		if(this.started){

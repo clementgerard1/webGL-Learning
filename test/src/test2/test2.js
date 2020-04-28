@@ -11,7 +11,6 @@ module.exports = function(){
 	const program = new WebGLProgram();
 	program.insertInBlock(document.getElementById("display"));
 	program.setUpdateOnResize(true);
-	program.setTextureRenderer(true);
 
 	const scene = new Scene();
 

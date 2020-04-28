@@ -54,7 +54,7 @@ class MirrorTexture extends Texture{
 		const renderer = new Renderer(newScene);
 		renderer.setInitialisation(false);
 		renderer.setResetConfigAtEnd(true);
-		newScene.setRenderer(renderer);
+		newScene.setRenderer(renderer, 0);
 		newScene.incMirrorValue();
 		renderer.render(this.webGLProgram);
 

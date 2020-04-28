@@ -8,7 +8,10 @@ class Scene{
 		this.clearColor = [0.0, 0.0, 0.0, 1.0];
 		this.shaderActif = false;
 		this.shaderBuilder = new ShaderBuilder();
-		this.renderer = new Renderer(this);
+
+		this.renderers = [];
+		this.renderers[0] = new Renderer(this);
+
 		this.activeCamera = null;
 		this.cameras = [];
 		this.objects = [];
@@ -19,12 +22,35 @@ class Scene{
 		return this.activeCamera;
 	}
 
-	setRenderer(renderer){
-		this.renderer = renderer;
+	addRenderer(renderer, i){
+
+		if(typeof i == "undefined"){
+			this.renderers[this.renderers.length] = renderer;
+		}else{
+			this.renderers.splice(i, 0, renderer);
+		}
+		
 	}
 
-	getRenderer(){
-		return this.renderer;
+	removeRenderer(i){
+		if(typeof i == "undefined"){
+			i = 0;
+		}
+		this.renderers.splice(i, 1);
+	}
+
+	setRenderer(renderer, i){
+		if(typeof i == "undefined"){
+			i = 0;
+		}
+		this.renderers[i] = renderer;
+	}
+
+	getRenderer(i){
+		if(typeof i == "undefined"){
+			i = 0;
+		}
+		return this.renderers[i];
 	}
 
 	setCamera(name){
@@ -95,8 +121,9 @@ class Scene{
 	}
 
 	render(webGLProgram){
-
-		this.renderer.render(webGLProgram);
+		for(let i = 0 ; i < this.renderers.length ; i++){
+			this.renderers[i].render(webGLProgram);
+		}
 
 	}
 
@@ -105,7 +132,7 @@ class Scene{
       neww.clearColor = this.clearColor.slice();
       neww.shaderBuilder = this.shaderBuilder;
       neww.shaderActif = false;
-      neww.renderer = this.renderer;
+      neww.renderers = this.renderers.slice();
       neww.activeCamera = this.activeCamera;
       Object.assign(neww.cameras, this.cameras);
       for(let obj in this.objects){

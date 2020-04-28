@@ -19,7 +19,7 @@ module.exports = function(){
 	//Tête
 	const tete = new Cube();
 	tete.setSize(2);
-	tete.setColors([1,0,,1], //Devant
+	tete.setColors([1,0,1,1], //Devant
 		[1,1,1,1], //Gauche
 		[0,1,0,1], //Haut
 		[0,0,1,1], //Droite

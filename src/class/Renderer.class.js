@@ -1,15 +1,30 @@
 class Renderer{
 
-	constructor(scene){
+	constructor(scene, initFunc, endFunc){
 		this.scissor = null;
 		this.scene = scene;
 		this.transforms = [];
 		this.init = true;
 		this.resetConfigAtEnd = false;
 		this.memory = [];
+
+		if(typeof initFunc == "undefined"){
+			this.initUser = function(program){};
+		}else{
+			this.initUser = initFunc;
+		}
+
+		if(typeof endFunc == "undefined"){
+			this.endUser = function(program){};
+		}else{
+			this.endUser = endFunc;
+		}
 	}
 
 	render(webGLProgram){
+		
+		this.initUser(webGLProgram);
+
 		this.memory = [];
 
 		if(this.resetConfigAtEnd){
@@ -89,6 +104,12 @@ class Renderer{
 			this._resetConfigEnd(webGLProgram);
 		}
 
+		this.endUser(webGLProgram);
+
+	}
+
+	setInitFunction(func){
+		this.initUser = func;
 	}
 
 	setInitialisation(bool){
@@ -99,7 +120,8 @@ class Renderer{
 		this.resetConfigAtEnd = bool;
 	}
 
-	setScissor(tab){
+	setScissor(x, y, width, height){
+		const tab = [x, y, width, height];
 		if(tab == null){
 			this.scissor = null;
 		}else{
@@ -113,6 +135,16 @@ class Renderer{
 
 	_init(webGLProgram){
 		const gl = webGLProgram.getContext();
+
+		const scissor = this.getScissor();
+		if( scissor != null){
+			gl.enable(gl.SCISSOR_TEST);
+			gl.scissor(scissor[0], scissor[1], scissor[2], scissor[3]);
+			gl.getParameter(gl.SCISSOR_BOX);
+		}else{
+			gl.disable(gl.SCISSOR_TEST);
+		}
+
 		//Initialisation
 		const colors = this.scene.getClearColor();
 		gl.clearColor(colors[0], colors[1], colors[2], colors[3]);
@@ -124,15 +156,6 @@ class Renderer{
 
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.useProgram(webGLProgram.shaderProgram);
-
-		const scissor = this.getScissor();
-		if( scissor != null){
-			gl.enable(gl.SCISSOR_TEST);
-			gl.scissor(scissor[0], scissor[1], scissor[2], scissor[3]);
-			gl.getParameter(gl.SCISSOR_BOX);
-		}else{
-			gl.disable(gl.SCISSOR_TEST);
-		}
 
 		const attributs = webGLProgram.actualShaderBuilder.getActiveAttributes();
 		for(let i = 0 ; i < attributs.length ; i++){
@@ -152,10 +175,12 @@ class Renderer{
 		this.memory["depthTest"] = webGLProgram.getContext().isEnabled(webGLProgram.getContext().DEPTH_TEST);
 		this.memory["depthFunc"] = webGLProgram.getContext().getParameter(webGLProgram.getContext().DEPTH_FUNC);
 		this.memory["cullFace"] = webGLProgram.getContext().isEnabled(webGLProgram.getContext().CULL_FACE);
+		this.memory["scissor"] = webGLProgram.getContext().getParameter(webGLProgram.getContext().SCISSOR_BOX);
 	}
 
 	_resetConfigEnd(webGLProgram){
 		webGLProgram.getContext().clearColor(this.memory["clearColor"][0], this.memory["clearColor"][1], this.memory["clearColor"][2], this.memory["clearColor"][3]);
+		webGLProgram.getContext().scissor(this.memory["scissor"][0], this.memory["scissor"][1], this.memory["scissor"][2], this.memory["scissor"][3]);
 		if(this.memory["blend"]){
 			webGLProgram.getContext().enable(webGLProgram.getContext().BLEND);
 		}else{
@@ -173,6 +198,8 @@ class Renderer{
 		}else{
 			webGLProgram.getContext().disable(webGLProgram.getContext().CULL_FACE);
 		}
+
+
 	}
 
 }
