@@ -167,6 +167,34 @@ class Object3D{
         transformsCollection[this.id] = [this, processedMatrix];
 	}
 
+  generateNormals(){
+    const norms = [];
+
+    for(let i = 0 ; i < this.indexes.length / 3 ; i++){
+      const p1 = [ this.positions[this.indexes[i*3]*3] , this.positions[this.indexes[i*3]*3+1] , this.positions[this.indexes[i*3]*3+2] ];
+      const p2 = [ this.positions[this.indexes[(i*3)+1]*3] , this.positions[this.indexes[(i*3)+1]*3+1] , this.positions[this.indexes[(i*3)+1]*3+2] ];
+      const p3 = [ this.positions[this.indexes[(i*3)+2]*3] , this.positions[this.indexes[(i*3)+2]*3+1] , this.positions[this.indexes[(i*3)+2]*3+2] ];
+      const vec1 = glmatrix.vec3.create();
+      const vec2 = glmatrix.vec3.create();
+      glmatrix.vec3.scale(p1, p1, -1);
+      glmatrix.vec3.add(vec1, p2, p1);
+      glmatrix.vec3.add(vec2, p3, p1);
+      const norm = glmatrix.vec3.create();
+      glmatrix.vec3.cross(norm, vec1, vec2);
+      glmatrix.vec3.normalize(norm, norm);
+      norms[this.indexes[i*3]*3] = norm[0];
+      norms[this.indexes[i*3]*3+1] = norm[1];
+      norms[this.indexes[i*3]*3+2] = norm[2];
+      norms[this.indexes[(i*3)+1]*3] = norm[0];
+      norms[this.indexes[(i*3)+1]*3+1] = norm[1];
+      norms[this.indexes[(i*3)+1]*3+2] = norm[2];
+      norms[this.indexes[(i*3)+2]*3] = norm[0];
+      norms[this.indexes[(i*3)+2]*3+1] = norm[1];
+      norms[this.indexes[(i*3)+2]*3+2] = norm[2];
+    }
+    return norms;
+  }
+
 	draw(webGLProgram){
 		if(this.transparency){
 			webGLProgram.getContext().depthMask(false);

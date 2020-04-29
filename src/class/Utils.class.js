@@ -12,8 +12,6 @@ class Utils{
 	static orthoProjectPlane(point, pointPlan, vec1, vec2){
 		let normal = glmatrix.vec3.create();
 		glmatrix.vec3.cross(normal, vec1, vec2);
-		//console.log(vec1, vec2);
-		//console.log(normal);
 		const plan = {
 			a : normal[0],
 			b : normal[1],

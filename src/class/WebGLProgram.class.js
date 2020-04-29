@@ -15,6 +15,7 @@ class WebGLProgram{
 
 		this.started = false;
 		this.updateOnResize = true;
+		this.depthTextureExt = null;
 
 		//FPS Counter
 		this.fpsTime = 0;
@@ -40,14 +41,12 @@ class WebGLProgram{
 		//Variables
 		this.buffers = [];
 
-		this.updateProgram();
-
 	}
 
-	setTextureRenderer(bool){
-		this.actualShaderBuilder.setTextureRenderer(bool);
-		this.updateProgram();
-	}
+	// setTextureRenderer(bool){
+	// 	this.actualShaderBuilder.setTextureRenderer(bool);
+	// 	this.updateProgram();
+	// }
 
 	createFrameTexture(){
 
@@ -55,6 +54,14 @@ class WebGLProgram{
 
 	setFPSDisplayTime(fpsDisplayTime){
 		this.fpsDisplay = fpsDisplayTime;
+	}
+
+	enableDepthTexture(){
+		this.depthTextureExt = this.gl.getExtension("WEBGL_depth_texture");
+	}
+
+	disableDepthTexture(){
+		this.depthTextureExt = null;
 	}
 
 	enableFPSCounter(callback, fpsDisplayTime){
@@ -153,17 +160,8 @@ class WebGLProgram{
 		}
 	}
 
-	updateProgram(){
-		//Création du programme
-		this.shaderProgram = this.actualShaderBuilder.getShaderProgram(this.gl);
-
-		//Création des buffers
-		this.buffers = [];
-		this.buffers["index"] = this.gl.createBuffer();
-		const attributs = this.actualShaderBuilder.getActiveAttributes();
-		for(let a in attributs){
-			this.buffers[attributs[a]] = this.gl.createBuffer();
-		}
+	getCanvas(){
+		return this.canvas;
 	}
 
 	getBuffer(name){
@@ -171,14 +169,15 @@ class WebGLProgram{
 	}
 
 	_handleResize(){
-		this.canvas.width = this.parentBlock.clientWidth;
-		this.canvas.height = this.parentBlock.clientHeight;
-		this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+		//var realToCSSPixels = window.devicePixelRatio;
+
+		//https://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html Pour la prise en charge écran rétina
+		this.canvas.width = Math.floor(this.parentBlock.clientWidth)// * realToCSSPixels);
+		this.canvas.height = Math.floor(this.parentBlock.clientHeight)// * realToCSSPixels);
 	}
 
 	updateFrame(){
 
-		
 		if(this.fpsCallback != null){
 			const now = new Date().getTime();
 			if(this.fpsLast != null){
@@ -197,7 +196,28 @@ class WebGLProgram{
 
 		//Render
 		for(let i = 0 ; i < this.scenes.length ; i++){
+
+			if(this.scenes[i].getShaderBuilder() != this.actualShaderBuilder){
+				this.actualShaderBuilder = this.scenes[i].getShaderBuilder();
+			}
+
+			if(!this.actualShaderBuilder.checkLights(this.scenes[i].getNbAmbientLights(), this.scenes[i].getNbDirectionalLights(), this.scenes[i].getNbPointLights(), this.scenes[i].getNbSpotLights())){
+				this.actualShaderBuilder.buildShaderProgram(this.gl, this.scenes[i]);
+			}
+
+			this.shaderProgram = this.actualShaderBuilder.getShaderProgram();
+			this.gl.useProgram(this.shaderProgram);
+
+			//Création des buffers
+			this.buffers = [];
+			this.buffers["index"] = this.gl.createBuffer();
+			const attributs = this.actualShaderBuilder.getActiveAttributes();
+			for(let a in attributs){
+				this.buffers[attributs[a]] = this.gl.createBuffer();
+			}
+
 			this.scenes[i].render(this);
+
 		}
 
 		//Next Frame

@@ -3,7 +3,13 @@ class ShaderBuilder{
 	constructor(){
 		this.vertexSrc = null;
 		this.fragmentSrc = null;
+		this.lastShaderProgram = null;
 
+		//Lights configuration
+		this.ambientLights = [];
+		this.directionalLights = [];
+		this.pointLights = [];
+		this.spotLights = [];
 
 		//Vertex Shader Attributes
 		this.vertexAttributes = {
@@ -14,22 +20,26 @@ class ShaderBuilder{
 		this.fragmentAttributes = {
 			"color" : false, // ALWAYS FALSE
 			"textureCoordonnees" : true, // ALWAYS TRUE
+			"normal" : true,
 		};
 
 		//Vertex Shader Uniform
 		this.vertexUniforms = {
 			"projection" : true,
 			"localTransformation" : true,
+			"localTransformationTransposeInvert" : true,
 			"mirrorActive" : true,
 			"mirrorPoint" : true,
 			"mirrorVec1" : true,
-			"mirrorVec2" : true
+			"mirrorVec2" : true,
+
 		}
 
 		//Fragment Shader Uniform
 		this.fragmentUniforms = {
 			"texture" : true,// ALWAYS TRUE
 			"opacity" : true,
+			//"depthTexture" : true,
 		}
 
 		this.infos = {
@@ -45,6 +55,13 @@ class ShaderBuilder{
 				"varyingType" : "varying lowp vec4",
 				"varyingName" : "vColor",
 			},
+			"normal" : {
+				"nbDatas" : 3,
+				"type" : "attribute vec4",
+				"name" : "aVertexNormal",
+				"varyingType" : "varying mediump vec4",
+				"varyingName" : "vNormal",
+			},
 			"projection" : {
 				"type" : "uniform mat4",
 				"name" : "uProjectionMatrix",
@@ -52,6 +69,10 @@ class ShaderBuilder{
 			"localTransformation" : {
 				"type" : "uniform mat4",
 				"name" : "uLocalTransformationMatrix",
+			},
+			"localTransformationTransposeInvert" : {
+				"type" : "uniform mat4",
+				"name" : "uLocalTransformationTIMatrix",
 			},
 			"texture" : {
 				"type" : "uniform sampler2D",
@@ -83,20 +104,27 @@ class ShaderBuilder{
 			"mirrorPoint" : {
 				"type" : "uniform vec4",
 				"name" : "uMirrorPoint",
-			}
+			},
+			// "depthTexture" : {
+			// 	"type" : "uniform bool",
+			// 	"name" : "uDepthTextureActive",
+			// }
 		}
 
 		this.pointers = {
 			"position" : null,
 			"color" : null,
+			"normal" : null,
 			"projection" : null,
 			"localTransformation" : null,
+			"localTransformationTransposeInvert" : null,
 			"textureCoordonnees" : null,
 			"mirrorActive" : null,
 			"mirrorVec1" : null,
 			"mirrorVec2" : null,
 			"mirrorPoint" : null,
 			"opacity" : null,
+			//"depthTexture" : null,
 			
 		}
 
@@ -133,7 +161,79 @@ class ShaderBuilder{
 		}
 	}
 
-	getShaderProgram(gl){
+	checkLights(ambient, directionals, points, spots){
+		if(ambient != Object.keys(this.ambientLights).length || directionals != Object.keys(this.directionalLights).length || points != Object.keys(this.pointLights).length || spots != Object.keys(this.spotLights).length){
+			return false;
+		}
+		for(let n in this.ambientLights){
+			if(this.ambientLights[n].needShaderRebuild()) return false;
+		}
+		for(let n in this.directionalLights){
+			if(this.directionalLights[n].needShaderRebuild()) return false;
+		}
+		for(let n in this.pointLights){
+			if(this.pointLights[n].needShaderRebuild()) return false;
+		}
+		for(let n in this.spotLights){
+			if(this.spotLights[n].needShaderRebuild()) return false;
+		}
+		return true;
+
+	}
+
+	getShaderProgram(){
+	  return this.lastShaderProgram;
+	}
+
+	buildShaderProgram(gl, scene){
+
+		//LIGTHS
+		this.ambientLights = scene.getAmbientLights();
+		this.directionalLights = scene.getDirectionalLights();
+		this.pointLights = scene.getPointLights();
+		this.spotLights = scene.getSpotLights();
+		//add uniforms and attributes
+		for(let name in this.ambientLights){
+			this.fragmentUniforms[name] = true;
+			this.pointers[name] = null;
+			this.infos[name] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "ual_" + name
+			}
+		}
+		for(let name in this.directionalLights){
+			this.fragmentUniforms[name + "_color"] = true;
+			this.fragmentUniforms[name + "_vector"] = true;
+			this.pointers[name + "_color"] = null;
+			this.pointers[name + "_vector"] = null;
+			this.infos[name + "_color"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "udl_color_" + name,
+			}
+			this.infos[name + "_vector"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "udl_vector_" + name,
+			}
+		}
+		for(let name in this.pointLights){
+			this.fragmentUniforms[name + "_color"] = true;
+			this.vertexUniforms[name + "_position"] = true;
+			this.pointers[name + "_color"] = null;
+			this.pointers[name + "_position"] = null;
+			this.infos[name + "_color"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "upl_color_" + name,
+			}
+			this.infos[name + "_position"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "upl_position_" + name,
+			}
+		}
 
 		this._buildShaders();
 
@@ -174,8 +274,7 @@ class ShaderBuilder{
 				this.pointers[u] = gl.getUniformLocation(shaderProgram, this.infos[u].name);
 			}
 		}
-
-	  return shaderProgram;
+		this.lastShaderProgram = shaderProgram;
 
 	}
 
@@ -257,6 +356,13 @@ class ShaderBuilder{
 			}
 		`;		
 
+		//Point Light
+		for(let n in this.pointLights){
+	  	this.vertexSrc += this.pointLights[n].getVertexShaderPreCode({
+	  		"name" : n
+	  	});
+		}
+
 
 		this.vertexSrc += "void main() {";
 
@@ -265,6 +371,11 @@ class ShaderBuilder{
 				if(this.fragmentAttributes[a]){
 					this.vertexSrc += this.infos[a].varyingName + " = " + this.infos[a].name + ";";
 				}
+			}
+
+			//Normal transformation
+			if(this.fragmentAttributes["normal"]){
+				this.vertexSrc += this.infos["normal"].varyingName + " = "  + this.infos["localTransformationTransposeInvert"].name + " * " + this.infos["normal"].name + ";";
 			}
 
 			//Transformation
@@ -281,6 +392,14 @@ class ShaderBuilder{
 					//this.vertexSrc += "gl_Position = translate(gl_Position, scale(uMirrorVec1, 2.0));";
 
 				this.vertexSrc += '}';
+			}
+
+			//Point Light
+			for(let n in this.pointLights){
+		  	this.vertexSrc += this.pointLights[n].getVertexShaderMainCode({
+		  		"position" : this.infos[n + "_position"],
+		  		"name" : n
+		  	});
 			}
 
 			//Projection
@@ -306,18 +425,57 @@ class ShaderBuilder{
 			if(this.fragmentUniforms[u]){
 				this.fragmentSrc += this.infos[u].type + " " + this.infos[u].name + ";";
 			}
-
 		}
+
+		//Point Light
+		for(let n in this.pointLights){
+	  	this.fragmentSrc += this.pointLights[n].getFragmentShaderPreCode({
+	  		"name" : n
+	  	});
+		}
+
 		this.fragmentSrc += "void main() {";
 			//Color
+			//this.fragmentSrc += "if(" + this.infos["depthTexture"].name + " == false){"
 			if(this.fragmentAttributes["color"]){
 				this.fragmentSrc += "gl_FragColor = " + this.infos["color"].varyingName + ";";
 			}else if(this.fragmentAttributes["textureCoordonnees"]){
 				this.fragmentSrc += "gl_FragColor = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
 			}
+			//this.fragmentSrc += "}"
+
+			//LIGHTS
+			for(let n in this.ambientLights){
+		  	this.fragmentSrc += this.ambientLights[n].getFragmentShaderMainCode({
+		  		"name" : this.infos[n].name
+		  	});
+			}
+			for(let n in this.directionalLights){
+		  	this.fragmentSrc += this.directionalLights[n].getFragmentShaderMainCode({
+		  		"normal" : this.infos["normal"],
+		  		"color" : this.infos[n + "_color"],
+		  		"vector" : this.infos[n + "_vector"],
+		  		"name" : n
+		  	});
+			}
+			for(let n in this.pointLights){
+		  	this.fragmentSrc += this.pointLights[n].getFragmentShaderMainCode({
+		  		"normal" : this.infos["normal"],
+		  		"color" : this.infos[n + "_color"],
+		  		"position" : this.infos[n + "_position"],
+		  		"name" : n
+		  	});
+			}
+
+
+			//Transparency
 			if(this.fragmentUniforms["opacity"]){
 				this.fragmentSrc += "gl_FragColor.a = gl_FragColor.a * " + this.infos["opacity"].name + ";";
 			}
+
+			// this.fragmentSrc += "if(" + this.infos["depthTexture"].name + " == true){";
+			// this.fragmentSrc += "gl_FragColor = vec4(gl_FragCoord.z, gl_FragCoord.z, gl_FragCoord.z, 1);";
+			// this.fragmentSrc += "}";
 
 		this.fragmentSrc += "}";
 

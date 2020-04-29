@@ -10,7 +10,6 @@ module.exports = function(){
 	const program = new WebGLProgram();
 	program.insertInBlock(document.getElementById("display"));
 	program.setUpdateOnResize(true);
-	program.setTextureRenderer(false);
 
 	const scene = new Scene();
 	scene.setClearColor(0,0,0,1);
@@ -124,8 +123,11 @@ module.exports = function(){
 	scene.setCamera("main");
 
 	const light = new AmbientLight();
-	light.setPower(0.8);
+	light.setRGB(1, 1, 1);
+	light.setPower(1);
 	scene.addLight("ambient", light);
+
+	scene.getShaderBuilder(0).setTextureRenderer(false);
 
 	program.setScene(scene);
 

@@ -20,11 +20,17 @@ class Plan extends Object3D {
             0., 1.,
             1., 1.,
             1., 0.,
-
-        ]
+        ];
+        this.positions = [
+            -0.5, -0.5, 0,
+            -0.5, 0.5, 0,
+            0.5, 0.5, 0,
+            0.5, -0.5, 0
+        ]; 
 		this.bufferFunctions = {
 			"position" : this._sendVertexPosition,
             "textureCoordonnees" : this._sendTextureCoordonnees,
+            "normal" : this._sendVertexNormals,
 		}
 
         //Scale
@@ -34,6 +40,9 @@ class Plan extends Object3D {
         this.sizeScale.setPosition(0, 0, 0);
         this.addMovement("size", this.sizeScale);
         this.sizeScale.start();
+        console.log("avant");
+        this.normals = super.generateNormals();
+        console.log("après");
 
 	}
 
@@ -85,15 +94,22 @@ class Plan extends Object3D {
             0
         );
 
-        //Insérer les données
-        const positions = [
-        	-0.5, -0.5, 0,
-        	-0.5, 0.5, 0,
-        	0.5, 0.5, 0,
-        	0.5, -0.5, 0
-        ]; 
-        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(positions), webGLProgram.getContext().STATIC_DRAW);
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.positions), webGLProgram.getContext().STATIC_DRAW);
 	}
+
+    _sendVertexNormals(webGLProgram, that){
+        //Initialisation
+        webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("normal"));
+        webGLProgram.getContext().vertexAttribPointer(
+            webGLProgram.getShaderBuilder().getPointer("normal"),
+            3,
+            webGLProgram.getContext().FLOAT,
+            false,
+            0,
+            0
+        );
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.normals), webGLProgram.getContext().STATIC_DRAW);
+    }
 
     drawMirroredScene(text, processedMatrix){
         //Mirror 

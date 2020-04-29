@@ -127,7 +127,10 @@ class Cube extends Object3D {
 			"position" : this._sendVertexPosition,
 			"color" : this._sendVertexColor,
             "textureCoordonnees" : this._sendTextureCoordonnees,
+            "normal" : this._sendVertexNormals,
 		}
+
+        this.normals = super.generateNormals();
 	}
 
 	setSize(s){
@@ -207,6 +210,20 @@ class Cube extends Object3D {
         webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.colors), webGLProgram.getContext().STATIC_DRAW);
     }
 
+    _sendVertexNormals(webGLProgram, that){
+        //Initialisation
+        webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("normal"));
+        webGLProgram.getContext().vertexAttribPointer(
+            webGLProgram.getShaderBuilder().getPointer("normal"),
+            3,
+            webGLProgram.getContext().FLOAT,
+            false,
+            0,
+            0
+        );
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.normals), webGLProgram.getContext().STATIC_DRAW);
+    }
+
     draw(webGLProgram, attributs, processedMatrix, orderTriangles){
         super.draw(webGLProgram);
 
@@ -219,6 +236,10 @@ class Cube extends Object3D {
         }
 
         webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix);
+        const ti = glmatrix.mat4.create();
+        glmatrix.mat4.invert(ti, processedMatrix);
+        glmatrix.mat4.transpose(ti, ti);
+        webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformationTransposeInvert"), false, ti);
 
         //Index
         webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, webGLProgram.getBuffer("index"));

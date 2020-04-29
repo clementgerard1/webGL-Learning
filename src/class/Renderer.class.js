@@ -7,6 +7,7 @@ class Renderer{
 		this.init = true;
 		this.resetConfigAtEnd = false;
 		this.memory = [];
+		this.viewport = [0, 0, 1, 1];
 
 		if(typeof initFunc == "undefined"){
 			this.initUser = function(program){};
@@ -98,6 +99,11 @@ class Renderer{
 
 		webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
 
+		//Lumieres
+		for(let n in this.scene.ambientLights) this.scene.ambientLights[n].render(webGLProgram, n);
+		for(let n in this.scene.directionalLights) this.scene.directionalLights[n].render(webGLProgram, n);
+		for(let n in this.scene.pointLights) this.scene.pointLights[n].render(webGLProgram, n);
+		for(let n in this.scene.spotLights) this.scene.spotLights[n].render(webGLProgram, n);
 
 
 		if(this.resetConfigAtEnd){
@@ -121,7 +127,7 @@ class Renderer{
 	}
 
 	setScissor(x, y, width, height){
-		const tab = [x, y, width, height];
+		const tab = [x, 1-y, width, height];
 		if(tab == null){
 			this.scissor = null;
 		}else{
@@ -136,15 +142,15 @@ class Renderer{
 	_init(webGLProgram){
 		const gl = webGLProgram.getContext();
 
-		const scissor = this.getScissor();
-		if( scissor != null){
+		if( this.scissor != null){
 			gl.enable(gl.SCISSOR_TEST);
-			gl.scissor(scissor[0], scissor[1], scissor[2], scissor[3]);
+			gl.scissor(this.scissor[0]  * webGLProgram.canvas.width, this.scissor[1] * webGLProgram.canvas.height - this.scissor[3] * webGLProgram.canvas.height, this.scissor[2]  * webGLProgram.canvas.width, this.scissor[3] * webGLProgram.canvas.height);
 			gl.getParameter(gl.SCISSOR_BOX);
 		}else{
 			gl.disable(gl.SCISSOR_TEST);
 		}
 
+		gl.viewport(this.viewport[0] * webGLProgram.canvas.width, this.viewport[1] * webGLProgram.canvas.height, this.viewport[2] * webGLProgram.canvas.width, this.viewport[3] * webGLProgram.canvas.height);
 		//Initialisation
 		const colors = this.scene.getClearColor();
 		gl.clearColor(colors[0], colors[1], colors[2], colors[3]);
@@ -155,7 +161,6 @@ class Renderer{
 		webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
 
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-		gl.useProgram(webGLProgram.shaderProgram);
 
 		const attributs = webGLProgram.actualShaderBuilder.getActiveAttributes();
 		for(let i = 0 ; i < attributs.length ; i++){
@@ -163,6 +168,7 @@ class Renderer{
 		}
 
 		//Shader uniforms
+		//gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("depthTexture"), false, 0);
 		gl.uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(gl.canvas.clientWidth / gl.canvas.clientHeight));
 		
 	}

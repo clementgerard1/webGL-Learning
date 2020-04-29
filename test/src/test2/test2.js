@@ -68,6 +68,11 @@ module.exports = function(){
 	scene.addCamera("main", camera);
 	scene.setCamera("main");
 
+	const light = new AmbientLight();
+	light.setPower(0.8);
+	light.setRGB(1, 1, 1);
+	scene.addLight("ambient", light);
+
 	program.start();
 
 	//scene.getRenderer().setScissor([0, 0, 400, 600]);

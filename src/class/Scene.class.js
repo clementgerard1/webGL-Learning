@@ -1,12 +1,15 @@
 const ShaderBuilder = require("./ShaderBuilder.class.js");
 const Renderer = require("./Renderer.class.js");
 const Object3DGroup = require("./Objects3D/Object3DGroup.class.js");
+const AmbientLight = require("./Lights/AmbientLight.class.js");
+const DirectionalLight = require("./Lights/DirectionalLight.class.js");
+const PointLight = require("./Lights/PointLight.class.js");
+const SpotLight = require("./Lights/SpotLight.class.js");
 
 class Scene{
 
 	constructor(){
 		this.clearColor = [0.0, 0.0, 0.0, 1.0];
-		this.shaderActif = false;
 		this.shaderBuilder = new ShaderBuilder();
 
 		this.renderers = [];
@@ -15,7 +18,10 @@ class Scene{
 		this.activeCamera = null;
 		this.cameras = [];
 		this.objects = [];
-		this.lights = [];
+		this.ambientLights = [];
+		this.directionalLights = [];
+		this.pointLights = [];
+		this.spotLights = [];
 	}
 
 	getCamera(){
@@ -81,11 +87,63 @@ class Scene{
 	}
 
 	addLight(name, light){
-		this.lights[name] = light;
+		if(light instanceof AmbientLight){
+			this.ambientLights[name] = light;
+		}else if(light instanceof DirectionalLight){
+			this.directionalLights[name] = light;
+		}else if(light instanceof PointLight){
+			this.pointLights[name] = light;
+		}else if(light instanceof SpotLight){
+			this.spotLights[name] = light;
+		}
 	}
 
 	removeLight(name){
-		delete this.lights[name];
+		if(this.ambientLights.includes(name)){
+			delete this.ambientLights[name];
+		}
+		if(this.directionalLights.includes(name)){
+			delete this.directionalLights[name];
+		}
+		if(this.pointLights.includes(name)){
+			delete this.pointLights[name];
+		}
+		if(this.spotLights.includes(name)){
+			delete this.spotLights[name];
+		}
+		
+	}
+
+	getNbAmbientLights(){
+		return Object.keys(this.ambientLights).length;
+	}
+
+	getNbDirectionalLights(){
+		return Object.keys(this.directionalLights).length;
+	}
+
+	getNbPointLights(){
+		return Object.keys(this.pointLights).length;
+	}
+
+	getNbSpotLights(){
+		return Object.keys(this.spotLights).length;
+	}
+
+	getAmbientLights(){
+		return this.ambientLights;
+	}
+
+	getDirectionalLights(){
+		return this.directionalLights;
+	}
+
+	getPointLights(){
+		return this.pointLights;
+	}
+
+	getSpotLights(){
+		return this.spotLights;
 	}
 
 	add3DObject(name, object){
@@ -108,16 +166,8 @@ class Scene{
 		return this.clearColor;
 	}
 
-	getShader(){
-		if(this.shaderActif){
+	getShaderBuilder(){
 			return this.shaderBuilder;
-		}else{
-			return null;
-		}
-	}
-
-	enableShader(bool){
-		this.shaderActif = bool;
 	}
 
 	render(webGLProgram){
@@ -131,16 +181,18 @@ class Scene{
       const neww = new this.constructor();
       neww.clearColor = this.clearColor.slice();
       neww.shaderBuilder = this.shaderBuilder;
-      neww.shaderActif = false;
       neww.renderers = this.renderers.slice();
       neww.activeCamera = this.activeCamera;
       Object.assign(neww.cameras, this.cameras);
+      Object.assign(neww.ambientLights, this.ambientLights);
+      Object.assign(neww.directionalLights, this.directionalLights);
+      Object.assign(neww.pointLights, this.pointLights);
+      Object.assign(neww.spotLights, this.spotLights);
       for(let obj in this.objects){
       	if(!objectsToRemove.includes(this.objects[obj])){
       		neww.objects[obj] = this.objects[obj].clone();
       	}
       }
-      Object.assign(neww.lights, this.lights);
       return neww;
   }
 
