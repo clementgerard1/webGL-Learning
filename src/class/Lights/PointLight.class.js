@@ -16,7 +16,7 @@ class PointLight extends Light{
 		this.movements = [];
 
 		this.position = [0, 0, 0];
-    this.positionTranslate = new Translate(this.position, 1, function(){});
+    this.positionTranslate = new Translate(this.position, 0, function(){});
     this.positionTranslate.setPosition(0, 0, 0);
     this.positionTranslate.setTranslationVec(0, 0, 0);
     this.addMovement("position", this.positionTranslate);
@@ -115,7 +115,7 @@ class PointLight extends Light{
 
 	getFragmentShaderMainCode(infos){
 		let str = "highp float " + infos.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_pos));";
-		str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb * pow(" + infos.name + "power, 10.0), gl_FragColor.a);";
+		str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb * pow(max(" + infos.name + "power, 0.0), 10.0), gl_FragColor.a);";
 		return str;
 	}
 

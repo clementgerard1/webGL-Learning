@@ -21,37 +21,22 @@ module.exports = function(){
 	const scene = new Scene();
 
 	//Cubes
-	const cube1 = new Cube(); cube1.setPosition(-1, 0, -1); scene.add3DObject("cube1", cube1); const texture1 = program.createColorTexture(0, 0, 1, 1); cube1.addTexture("color", texture1);
+	const cube1 = new Cube(); cube1.setPosition(-1, 0, -1); cube1.setSize(1);scene.add3DObject("cube1", cube1); const texture1 = program.createColorTexture(0, 0, 1, 1); cube1.addTexture("color", texture1);
 	const cube2 = new Cube();	cube2.setPosition(0, 0, -0); scene.add3DObject("cube2", cube2); const texture2 = program.createColorTexture(0, 1, 0, 1); cube2.addTexture("color", texture2);
 	const cube3 = new Cube();	cube3.setPosition(1, 0, -1); scene.add3DObject("cube3", cube3); const texture3 = program.createColorTexture(1, 0, 0, 1); cube3.addTexture("color", texture3);
 
-	const rotate1 = new Rotate(360, [0,1,0], 1000, function(){
-		rotate1.reset();
-	});
-	const rotate11 = new Rotate(360, [1,0,1], 1300, function(){
-		rotate11.reset();
-	});
-	const rotate111 = new Rotate(360, [1,1,1], 1300, function(){
-		rotate111.reset();
-	});
-	rotate111.setPosition(1, 0, 1);
+	const rotate1 = new Rotate(360, [1,0,0], 10); rotate1.setRepeat(true); //rotate1.setPowSpeed(0.7);
+	const rotate11 = new Rotate(360, [1,0,0], 3000); rotate11.setRepeat(true); rotate11.setPowSpeed(1);
+	const rotate111 = new Rotate(360, [1,0,0], 3000); rotate111.setRepeat(true); rotate111.setPowSpeed(1);
+	rotate11.setPosition(0, 0, 1.);
+	rotate111.setPosition(0, 0, 0);
 
-	const rotate2 = new Rotate(360, [0,1,0], 700, function(){
-		rotate2.reset();
-	});
-	const rotate22 = new Rotate(360, [0,1,1], 1000, function(){
-		rotate22.reset();
-	});
+	const rotate2 = new Rotate(360, [0,1,0], 700); rotate2.setRepeat(true);
+	const rotate22 = new Rotate(360, [0,1,1], 1000); rotate22.setRepeat(true);
 
-	const rotate3 = new Rotate(360, [0,1,0], 800, function(){
-		rotate3.reset();
-	});
-	const rotate33 = new Rotate(360, [1,1,0], 1000, function(){
-		rotate33.reset();
-	});
-	const rotate333 = new Rotate(360, [1,1,-1], 1000, function(){
-		rotate333.reset();
-	});
+	const rotate3 = new Rotate(360, [0,1,0], 800); rotate3.setRepeat(true);
+	const rotate33 = new Rotate(360, [1,1,0], 1000); rotate33.setRepeat(true);
+	const rotate333 = new Rotate(360, [1,1,-1], 1000); rotate333.setRepeat(true);
 	rotate333.setPosition(-1, 0, 1);
 
 	rotate1.start();
@@ -63,14 +48,14 @@ module.exports = function(){
 	rotate33.start();
 	rotate333.start();
 
-	cube1.addMovement(rotate1);
+	//cube1.addMovement(rotate1);
 	cube1.addMovement(rotate11);
 	cube1.addMovement(rotate111);
-	cube2.addMovement(rotate2);
-	cube2.addMovement(rotate22);
-	cube3.addMovement(rotate3);
-	cube3.addMovement(rotate33);
-	cube3.addMovement(rotate333);
+	//cube2.addMovement(rotate2);
+	//cube2.addMovement(rotate22);
+	//cube3.addMovement(rotate3);
+	//cube3.addMovement(rotate33);
+	//cube3.addMovement(rotate333);
 
 	scene.setClearColor(0,0,0,1);
 	program.setScene(scene);
@@ -140,12 +125,14 @@ module.exports = function(){
 
 	const shader = scene.getShaderBuilder();
 	const nShader = shader.clone(); // Normal Shader
+	let tempS = null
 	nShader.setMode("normal");
 	renderTLNormals.setInitUserFunction(function(program){
+		tempS = scene.getShaderBuilder();
 		scene.setShaderBuilder(nShader);
 	});
 	renderTLNormals.setEndUserFunction(function(program){
-		scene.setShaderBuilder(shader);
+		scene.setShaderBuilder(tempS);
 	});
 	scene.addRenderer(renderTLNormals);
 
@@ -197,13 +184,16 @@ module.exports = function(){
 
 	program.start();
 
+	const lShader = shader.clone();
+	lShader.setMode("line");
+
 	window.addEventListener('DOMContentLoaded', function(event){
 
 		document.getElementById("switch").addEventListener("click", function(event){
 			if(scene.getShaderBuilder().getMode() == "triangle"){
-				scene.getShaderBuilder().setMode("line")
+				scene.setShaderBuilder(lShader);
 			}else{
-				scene.getShaderBuilder().setMode("triangle")
+				scene.setShaderBuilder(shader);
 			}
 		});
 

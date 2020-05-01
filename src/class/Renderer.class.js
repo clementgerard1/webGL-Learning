@@ -241,6 +241,14 @@ class Renderer{
 		}
 	}
 
+	enableEvents(){
+
+	}
+
+	disableEvents(){
+		
+	}
+
 	clone(){
 		const neww = new this.constructor();
 		if(this.scissor == null){

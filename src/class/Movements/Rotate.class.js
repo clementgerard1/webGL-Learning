@@ -14,19 +14,14 @@ class Rotate extends Movement{
 		this.started = false;
 		this.callback = callback;
 		this.finished = false;
-	}
+		this.animate = nbFrame > 0;
 
-	start(){
-		this.started = true;
-	}
+		if(typeof callback != "undefined"){
+			this.callback = callback;
+		}else{
+			this.callback = null;
+		}
 
-	stop(){
-		this.started = false;
-	}
-
-	reset(){
-		this.step = 0;
-		this.finished = false;
 	}
 
 	setPosition(x, y, z){
@@ -34,21 +29,24 @@ class Rotate extends Movement{
 	}
 
 	process(matrix, stepup){
-
-		if(stepup && this.started && this.step < this.nbFrame){
-			this.step++;
+		glmatrix.mat4.translate(matrix, matrix, [this.positions[0], this.positions[1], this.positions[2]]);
+		
+		if(this.animate){
+			glmatrix.mat4.rotate(matrix, matrix, this.angle * super.getPourcent(), this.axe);
+		}else{
+			glmatrix.mat4.rotate(matrix, matrix, this.angle, this.axe);
 		}
 
-		glmatrix.mat4.translate(matrix, matrix, [this.positions[0], this.positions[1], this.positions[2]]);
-		glmatrix.mat4.rotate(matrix, matrix, this.angle * (this.step / this.nbFrame), this.axe);
 		glmatrix.mat4.translate(matrix, matrix, [-this.positions[0], -this.positions[1], -this.positions[2]]);
 
-
-
-		//MOVEMENT COMPLETED
-		if(!this.finished && this.step == this.nbFrame){
-			this.finished = true;
-			this.callback();
+		if(this.animate){
+			glmatrix.mat4.rotate(matrix, matrix, -this.angle * super.getPourcent(), this.axe);
+		}else{
+			glmatrix.mat4.rotate(matrix, matrix, -this.angle, this.axe);
+		}
+		
+		if(stepup && this.animate){
+			super.endFrame();
 		}
 
 	}

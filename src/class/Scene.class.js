@@ -67,7 +67,7 @@ class Scene{
 
 		if(typeof name != "string"){
       movement = name;
-      name = "movement" + this.id;
+      name = "movement" + Object.keys(this.cameras).length;
     }
 
 		this.cameras[name] = camera;
@@ -96,7 +96,7 @@ class Scene{
 
 		if(typeof name != "string"){
       movement = name;
-      name = "movement" + this.id;
+      name = "movement" + Object.keys(this.lights).length;
     }
 
 		if(light instanceof AmbientLight){
@@ -162,7 +162,7 @@ class Scene{
 
 		if(typeof name != "string"){
       movement = name;
-      name = "movement" + this.id;
+      name = "movement" + Object.keys(this.objects).length;
     }
 
 		this.objects[name] = object;

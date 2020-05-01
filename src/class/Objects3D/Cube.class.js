@@ -78,7 +78,7 @@ class Cube extends Object3D {
 
         //Scale
         this.size = 1;
-        this.sizeScale = new Scale([this.size/2,this.size/2,this.size/2], 1, function(){});
+        this.sizeScale = new Scale([this.size/2,this.size/2,this.size/2], 0, function(){});
         this.sizeScale.setPosition(0, 0, 0);
         this.addMovement("size", this.sizeScale);
         this.sizeScale.start();

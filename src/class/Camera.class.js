@@ -16,7 +16,7 @@ class Camera extends Movable{
 
 		//Position
 		this.position = [0, 0, 0];
-		this.positionTranslate = new Translate(this.position, 1, function(){});
+		this.positionTranslate = new Translate(this.position, 0, function(){});
     this.positionTranslate.setPosition(0, 0, 0);
     this.positionTranslate.setTranslationVec(0, 0, 0);
     this.addMovement("position", this.positionTranslate);
@@ -37,6 +37,10 @@ class Camera extends Movable{
 	}
 
 	addMovement(name, movement){
+			if(typeof name != "string"){
+	      movement = name;
+	      name = "movement" + Object.keys(this.movements).length;
+	    }
       this.movements[name] = movement;
   }
 

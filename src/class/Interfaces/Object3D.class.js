@@ -21,7 +21,7 @@ class Object3D{
 
     //Position
     this.position = [0, 0, 0];
-    this.positionTranslate = new Translate(this.position, 1, function(){});
+    this.positionTranslate = new Translate(this.position, 0, function(){});
     this.positionTranslate.setPosition(0, 0, 0);
     this.positionTranslate.setTranslationVec(0, 0, 0);
     this.addMovement("position", this.positionTranslate);
@@ -38,8 +38,9 @@ class Object3D{
 	addMovement(name, movement){
     if(typeof name != "string"){
       movement = name;
-      name = "movement" + this.id;
+      name = "movement" + Object.keys(this.movements).length;
     }
+    console.log(name, movement);
     this.movements[name] = movement;
   }
 
@@ -50,7 +51,7 @@ class Object3D{
   addTexture(name, texture){
     if(typeof name != "string"){
       movement = name;
-      name = "movement" + this.id;
+      name = "movement" + Object.keys(this.textures).length;
     }
     this.textures[name] = texture;
     this._checkTransparency();

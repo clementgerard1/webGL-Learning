@@ -7,24 +7,17 @@ class Scale extends Movement{
 		super();
 		this.vec = vec;
 		this.nbFrame = nbFrame;
-		this.step = 0;
     this.positions = [0, 0, 0];
 		this.started = false;
-		this.callback = callback;
 		this.finished = false;
-	}
+		this.animate = nbFrame > 0;
 
-	start(){
-		this.started = true;
-	}
+		if(typeof callback != "undefined"){
+			this.callback = callback;
+		}else{
+			this.callback = null;
+		}
 
-	stop(){
-		this.started = false;
-	}
-
-	reset(){
-		this.step = 0;
-		this.finished = false;
 	}
 
 	setPosition(x, y, z){
@@ -37,18 +30,20 @@ class Scale extends Movement{
 	
 	process(matrix, stepup){
 
-		if(stepup && this.started && this.step < this.nbFrame){
-			this.step++;
-		}
-
 		glmatrix.mat4.translate(matrix, matrix, [this.positions[0], this.positions[1], this.positions[2]]);
-		glmatrix.mat4.scale(matrix, matrix, this.vec);
+		if(this.animate){
+			const vec = glmatrix.vec3.create();
+			glmatrix.vec3.scale(vec, this.vec, super.getPourcent());
+			glmatrix.mat4.translate(matrix, matrix, vec);
+		}else{
+			glmatrix.mat4.scale(matrix, matrix, this.vec);
+		}
+		
 		glmatrix.mat4.translate(matrix, matrix, [-this.positions[0], -this.positions[1], -this.positions[2]]);
 
-		//MOVEMENT COMPLETED
-		if(!this.finished && this.step == this.nbFrame){
-			this.finished = true;
-			this.callback();
+
+		if(stepup && this.animate){
+			super.endFrame();
 		}
 
 	}

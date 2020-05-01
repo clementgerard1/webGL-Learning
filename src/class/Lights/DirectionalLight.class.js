@@ -36,7 +36,7 @@ class DirectionalLight extends Light{
 
 	getFragmentShaderMainCode(infos){
 		let str = "highp float " + infos.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), " + infos.vector.name + ");";
-		str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb * " + infos.name + "power, gl_FragColor.a);";
+		str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb * max(" + infos.name + "power, 0.0), gl_FragColor.a);";
 		return str;
 	}
 

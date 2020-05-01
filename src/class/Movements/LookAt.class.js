@@ -8,6 +8,7 @@ class LookAt extends Movement{
 		super();
 		this.center = center;
 		this.up = up;
+		this.animate = false;
 	}
 
 	setCenter(center){
