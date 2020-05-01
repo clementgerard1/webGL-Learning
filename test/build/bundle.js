@@ -4490,15 +4490,15 @@ module.exports = function () {
   rotate22.start();
   rotate3.start();
   rotate33.start();
-  rotate333.start(); //cube1.addMovement(rotate1);
-
+  rotate333.start();
+  cube1.addMovement(rotate1);
   cube1.addMovement(rotate11);
-  cube1.addMovement(rotate111); //cube2.addMovement(rotate2);
-  //cube2.addMovement(rotate22);
-  //cube3.addMovement(rotate3);
-  //cube3.addMovement(rotate33);
-  //cube3.addMovement(rotate333);
-
+  cube1.addMovement(rotate111);
+  cube2.addMovement(rotate2);
+  cube2.addMovement(rotate22);
+  cube3.addMovement(rotate3);
+  cube3.addMovement(rotate33);
+  cube3.addMovement(rotate333);
   scene.setClearColor(0, 0, 0, 1);
   program.setScene(scene); //Carré invisible en haut à droite
 
