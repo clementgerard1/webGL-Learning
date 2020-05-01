@@ -197,25 +197,6 @@ class WebGLProgram{
 		//Render
 		for(let i = 0 ; i < this.scenes.length ; i++){
 
-			if(this.scenes[i].getShaderBuilder() != this.actualShaderBuilder){
-				this.actualShaderBuilder = this.scenes[i].getShaderBuilder();
-			}
-
-			if(!this.actualShaderBuilder.checkLights(this.scenes[i].getNbAmbientLights(), this.scenes[i].getNbDirectionalLights(), this.scenes[i].getNbPointLights(), this.scenes[i].getNbSpotLights())){
-				this.actualShaderBuilder.buildShaderProgram(this.gl, this.scenes[i]);
-			}
-
-			this.shaderProgram = this.actualShaderBuilder.getShaderProgram();
-			this.gl.useProgram(this.shaderProgram);
-
-			//Création des buffers
-			this.buffers = [];
-			this.buffers["index"] = this.gl.createBuffer();
-			const attributs = this.actualShaderBuilder.getActiveAttributes();
-			for(let a in attributs){
-				this.buffers[attributs[a]] = this.gl.createBuffer();
-			}
-
 			this.scenes[i].render(this);
 
 		}

@@ -191,8 +191,12 @@ class Cube extends Object3D {
             0
         );
 
-
-        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.positions), webGLProgram.getContext().STATIC_DRAW);
+        if(webGLProgram.getShaderBuilder().getMode() != "normal"){
+           webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.positions), webGLProgram.getContext().STATIC_DRAW);
+        }else{
+            const positions = super.generateNormalPositions(that);
+            webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(positions), webGLProgram.getContext().STATIC_DRAW);
+        }
 	}
 
 	_sendVertexColor(webGLProgram, that){
@@ -243,11 +247,20 @@ class Cube extends Object3D {
 
         //Index
         webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, webGLProgram.getBuffer("index"));
-        webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW);
 
-        //Draw
-
-        webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+        if(webGLProgram.getShaderBuilder().getMode() == "line"){
+            const indexes = super.toLines(this.indexes);
+            webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(indexes), webGLProgram.getContext().STATIC_DRAW);
+            //Draw
+            webGLProgram.getContext().drawElements(webGLProgram.getContext().LINES, indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+        }else if(webGLProgram.getShaderBuilder().getMode() == "normal"){
+            webGLProgram.getContext().uniform4fv(webGLProgram.getShaderBuilder().getPointer("normalColor"), webGLProgram.getShaderBuilder().getNormalColor());
+            webGLProgram.getContext().drawArrays(webGLProgram.getContext().LINES, 0, (this.normals.length * 2) / 3);
+        }else{
+            webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW);
+            //Draw
+            webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+        }
    
     }
 

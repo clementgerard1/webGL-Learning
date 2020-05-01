@@ -4,12 +4,21 @@ class ShaderBuilder{
 		this.vertexSrc = null;
 		this.fragmentSrc = null;
 		this.lastShaderProgram = null;
+		
+		this.triangleMode = true;
+		this.normalDisplay = false;
+		this.normalColor = [1, 1, 1, 1];
+
+		this.mode = "triangle";
 
 		//Lights configuration
 		this.ambientLights = [];
 		this.directionalLights = [];
 		this.pointLights = [];
 		this.spotLights = [];
+
+		this.needReBuild = true;
+
 
 		//Vertex Shader Attributes
 		this.vertexAttributes = {
@@ -39,6 +48,7 @@ class ShaderBuilder{
 		this.fragmentUniforms = {
 			"texture" : true,// ALWAYS TRUE
 			"opacity" : true,
+			"normalColor" : false
 			//"depthTexture" : true,
 		}
 
@@ -105,6 +115,10 @@ class ShaderBuilder{
 				"type" : "uniform vec4",
 				"name" : "uMirrorPoint",
 			},
+			"normalColor" : {
+				"type" : "uniform lowp vec4",
+				"name" : "uNormalColor",
+			} 
 			// "depthTexture" : {
 			// 	"type" : "uniform bool",
 			// 	"name" : "uDepthTextureActive",
@@ -124,10 +138,55 @@ class ShaderBuilder{
 			"mirrorVec2" : null,
 			"mirrorPoint" : null,
 			"opacity" : null,
+			"normalColor" : null,
 			//"depthTexture" : null,
 			
 		}
 
+	}
+
+	needRebuild(){
+		return this.needReBuild;
+	}
+
+	getMode(){
+		return this.mode;
+	}
+
+	setMode(mode){
+		if(mode != this.mode){
+			this.needReBuild = true;
+			this.mode = mode;
+			if(mode == "line"){
+				this.triangleMode = false;
+				this.normalDisplay = false;
+				this.fragmentAttributes["normal"] = true;
+				this.fragmentAttributes["textureCoordonnees"] = true;
+				this.fragmentAttributes["color"] = false;
+				this.fragmentUniforms["normalColor"] = false;
+				this.fragmentUniforms["texture"] = true;
+				this.fragmentUniforms["opacity"] = true;
+			}else if(mode == "normal"){
+				this.triangleMode = false;
+				this.normalDisplay = true;
+				this.fragmentAttributes["color"] = false;
+				this.fragmentAttributes["normal"] = false;
+				this.fragmentAttributes["textureCoordonnees"] = false;
+				this.fragmentUniforms["normalColor"] = true;
+				this.fragmentUniforms["texture"] = false;
+				this.fragmentUniforms["opacity"] = false;
+				
+			}else{
+				this.triangleMode = true;
+				this.normalDisplay = false;
+				this.fragmentAttributes["color"] = false;
+				this.fragmentAttributes["normal"] = true;
+				this.fragmentAttributes["textureCoordonnees"] = true;
+				this.fragmentUniforms["normalColor"] = false;
+				this.fragmentUniforms["texture"] = true;
+				this.fragmentUniforms["opacity"] = true;
+			}
+		}
 	}
 
 	getPointer(value){
@@ -179,6 +238,14 @@ class ShaderBuilder{
 		}
 		return true;
 
+	}
+
+	getNormalColor(){
+		return this.normalColor;
+	}
+
+	setNormalColor(r, g, b, a){
+		this.normalColor = [r, g, b, a];
 	}
 
 	getShaderProgram(){
@@ -297,6 +364,7 @@ class ShaderBuilder{
 	_buildShaders(){
 		this._buildVertexShader();
 		this._buildFragmentShader();
+		this.needReBuild = false;
 	}
 
 	_buildVertexShader(){
@@ -357,10 +425,12 @@ class ShaderBuilder{
 		`;		
 
 		//Point Light
-		for(let n in this.pointLights){
-	  	this.vertexSrc += this.pointLights[n].getVertexShaderPreCode({
-	  		"name" : n
-	  	});
+		if(this.mode != "normal"){
+			for(let n in this.pointLights){
+		  	this.vertexSrc += this.pointLights[n].getVertexShaderPreCode({
+		  		"name" : n
+		  	});
+			}
 		}
 
 
@@ -394,12 +464,14 @@ class ShaderBuilder{
 				this.vertexSrc += '}';
 			}
 
-			//Point Light
-			for(let n in this.pointLights){
-		  	this.vertexSrc += this.pointLights[n].getVertexShaderMainCode({
-		  		"position" : this.infos[n + "_position"],
-		  		"name" : n
-		  	});
+			if(this.mode != "normal"){
+				//Point Light
+				for(let n in this.pointLights){
+			  	this.vertexSrc += this.pointLights[n].getVertexShaderMainCode({
+			  		"position" : this.infos[n + "_position"],
+			  		"name" : n
+			  	});
+				}
 			}
 
 			//Projection
@@ -427,11 +499,13 @@ class ShaderBuilder{
 			}
 		}
 
-		//Point Light
-		for(let n in this.pointLights){
-	  	this.fragmentSrc += this.pointLights[n].getFragmentShaderPreCode({
-	  		"name" : n
-	  	});
+		if(this.mode != "normal"){
+			//Point Light
+			for(let n in this.pointLights){
+		  	this.fragmentSrc += this.pointLights[n].getFragmentShaderPreCode({
+		  		"name" : n
+		  	});
+			}
 		}
 
 		this.fragmentSrc += "void main() {";
@@ -444,27 +518,31 @@ class ShaderBuilder{
 			}
 			//this.fragmentSrc += "}"
 
-			//LIGHTS
-			for(let n in this.ambientLights){
-		  	this.fragmentSrc += this.ambientLights[n].getFragmentShaderMainCode({
-		  		"name" : this.infos[n].name
-		  	});
-			}
-			for(let n in this.directionalLights){
-		  	this.fragmentSrc += this.directionalLights[n].getFragmentShaderMainCode({
-		  		"normal" : this.infos["normal"],
-		  		"color" : this.infos[n + "_color"],
-		  		"vector" : this.infos[n + "_vector"],
-		  		"name" : n
-		  	});
-			}
-			for(let n in this.pointLights){
-		  	this.fragmentSrc += this.pointLights[n].getFragmentShaderMainCode({
-		  		"normal" : this.infos["normal"],
-		  		"color" : this.infos[n + "_color"],
-		  		"position" : this.infos[n + "_position"],
-		  		"name" : n
-		  	});
+			if(this.mode != "normal"){
+				//LIGHTS
+				for(let n in this.ambientLights){
+			  	this.fragmentSrc += this.ambientLights[n].getFragmentShaderMainCode({
+			  		"name" : this.infos[n].name
+			  	});
+				}
+				for(let n in this.directionalLights){
+			  	this.fragmentSrc += this.directionalLights[n].getFragmentShaderMainCode({
+			  		"normal" : this.infos["normal"],
+			  		"color" : this.infos[n + "_color"],
+			  		"vector" : this.infos[n + "_vector"],
+			  		"name" : n
+			  	});
+				}
+				for(let n in this.pointLights){
+			  	this.fragmentSrc += this.pointLights[n].getFragmentShaderMainCode({
+			  		"normal" : this.infos["normal"],
+			  		"color" : this.infos[n + "_color"],
+			  		"position" : this.infos[n + "_position"],
+			  		"name" : n
+			  	});
+				}
+			}else{
+				this.fragmentSrc += "gl_FragColor = " + this.infos["normalColor"].name + ";";
 			}
 
 
@@ -481,7 +559,34 @@ class ShaderBuilder{
 
 		console.log(this.fragmentSrc);
 
+	}
 
+	clone(){
+		const neww = new this.constructor();
+
+		neww.vertexSrc = this.vertexSrc;
+		neww.fragmentSrc = this.fragmentSrc;
+		neww.lastShaderProgram = this.lastShaderProgram;
+		
+		neww.triangleMode = this.triangleMode;
+		neww.normalDisplay = this.normalDisplay;
+		neww.normalColor = this.normalColor.slice();
+		neww.mode = this.mode;
+
+		//Lights configuration
+		Object.assign(neww.ambientLights, this.ambientLights);
+		Object.assign(neww.directionalLights, this.directionalLights);
+		Object.assign(neww.pointLights, this.pointLights);
+		Object.assign(neww.spotLights, this.spotLights);
+		neww.needReBuild = this.needReBuild;
+		Object.assign(neww.vertexAttributes, this.vertexAttributes);
+		Object.assign(neww.fragmentAttributes, this.fragmentAttributes);
+		Object.assign(neww.vertexUniforms, this.vertexUniforms);
+		Object.assign(neww.fragmentUniforms, this.fragmentUniforms);
+		Object.assign(neww.infos, this.infos);
+		Object.assign(neww.pointers, this.pointers);
+
+		return neww;
 	}
 
 }

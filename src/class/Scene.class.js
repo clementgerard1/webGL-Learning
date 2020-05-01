@@ -64,6 +64,12 @@ class Scene{
 	}
 
 	addCamera(name, camera){
+
+		if(typeof name != "string"){
+      movement = name;
+      name = "movement" + this.id;
+    }
+
 		this.cameras[name] = camera;
 		if(this.activeCamera == null){
 			this.activeCamera = this.cameras[name];
@@ -87,6 +93,12 @@ class Scene{
 	}
 
 	addLight(name, light){
+
+		if(typeof name != "string"){
+      movement = name;
+      name = "movement" + this.id;
+    }
+
 		if(light instanceof AmbientLight){
 			this.ambientLights[name] = light;
 		}else if(light instanceof DirectionalLight){
@@ -147,6 +159,12 @@ class Scene{
 	}
 
 	add3DObject(name, object){
+
+		if(typeof name != "string"){
+      movement = name;
+      name = "movement" + this.id;
+    }
+
 		this.objects[name] = object;
 	}
 
@@ -168,6 +186,10 @@ class Scene{
 
 	getShaderBuilder(){
 			return this.shaderBuilder;
+	}
+
+	setShaderBuilder(sb){
+		this.shaderBuilder = sb;
 	}
 
 	render(webGLProgram){

@@ -304,11 +304,18 @@ function () {
     this.positionTranslate.start();
     this.textures = [];
     this.textureCoordonnees = [];
+    this.positions = [];
+    this.normals = [];
   }
 
   _createClass(Object3D, [{
     key: "addMovement",
     value: function addMovement(name, movement) {
+      if (typeof name != "string") {
+        movement = name;
+        name = "movement" + this.id;
+      }
+
       this.movements[name] = movement;
     }
   }, {
@@ -319,6 +326,11 @@ function () {
   }, {
     key: "addTexture",
     value: function addTexture(name, texture) {
+      if (typeof name != "string") {
+        movement = name;
+        name = "movement" + this.id;
+      }
+
       this.textures[name] = texture;
 
       this._checkTransparency();
@@ -497,6 +509,22 @@ function () {
       return norms;
     }
   }, {
+    key: "generateNormalPositions",
+    value: function generateNormalPositions(that) {
+      var positions = [];
+
+      for (var i = 0; i < that.normals.length / 3; i++) {
+        positions[positions.length] = that.positions[i * 3];
+        positions[positions.length] = that.positions[i * 3 + 1];
+        positions[positions.length] = that.positions[i * 3 + 2];
+        positions[positions.length] = that.positions[i * 3] + that.normals[i * 3];
+        positions[positions.length] = that.positions[i * 3 + 1] + that.normals[i * 3 + 1];
+        positions[positions.length] = that.positions[i * 3 + 2] + that.normals[i * 3 + 2];
+      }
+
+      return positions;
+    }
+  }, {
     key: "draw",
     value: function draw(webGLProgram) {
       if (this.transparency) {
@@ -506,6 +534,25 @@ function () {
       }
 
       webGLProgram.getContext().uniform1f(webGLProgram.getShaderBuilder().getPointer("opacity"), this.opacity);
+    }
+  }, {
+    key: "toLines",
+    value: function toLines(indexes) {
+      var result = [];
+
+      for (var i = 0; i < indexes.length / 3; i++) {
+        //Line 1
+        result[result.length] = indexes[i * 3];
+        result[result.length] = indexes[i * 3 + 1]; //Line 2
+
+        result[result.length] = indexes[i * 3 + 1];
+        result[result.length] = indexes[i * 3 + 2]; //Line 3
+
+        result[result.length] = indexes[i * 3 + 2];
+        result[result.length] = indexes[i * 3];
+      }
+
+      return result;
     }
   }, {
     key: "_orderPositionsByDistance",
@@ -1423,7 +1470,14 @@ function (_Object3D) {
       //Initialisation
       webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("position"));
       webGLProgram.getContext().vertexAttribPointer(webGLProgram.getShaderBuilder().getPointer("position"), 3, webGLProgram.getContext().FLOAT, false, 0, 0);
-      webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.positions), webGLProgram.getContext().STATIC_DRAW);
+
+      if (webGLProgram.getShaderBuilder().getMode() != "normal") {
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.positions), webGLProgram.getContext().STATIC_DRAW);
+      } else {
+        var positions = _get(_getPrototypeOf(Cube.prototype), "generateNormalPositions", this).call(this, that);
+
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(positions), webGLProgram.getContext().STATIC_DRAW);
+      }
     }
   }, {
     key: "_sendVertexColor",
@@ -1462,9 +1516,21 @@ function (_Object3D) {
       webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformationTransposeInvert"), false, ti); //Index
 
       webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, webGLProgram.getBuffer("index"));
-      webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW); //Draw
 
-      webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+      if (webGLProgram.getShaderBuilder().getMode() == "line") {
+        var indexes = _get(_getPrototypeOf(Cube.prototype), "toLines", this).call(this, this.indexes);
+
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(indexes), webGLProgram.getContext().STATIC_DRAW); //Draw
+
+        webGLProgram.getContext().drawElements(webGLProgram.getContext().LINES, indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+      } else if (webGLProgram.getShaderBuilder().getMode() == "normal") {
+        webGLProgram.getContext().uniform4fv(webGLProgram.getShaderBuilder().getPointer("normalColor"), webGLProgram.getShaderBuilder().getNormalColor());
+        webGLProgram.getContext().drawArrays(webGLProgram.getContext().LINES, 0, this.normals.length * 2 / 3);
+      } else {
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW); //Draw
+
+        webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+      }
     }
   }, {
     key: "getDistance",
@@ -1739,7 +1805,14 @@ function (_Object3D) {
       //Initialisation
       webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("position"));
       webGLProgram.getContext().vertexAttribPointer(webGLProgram.getShaderBuilder().getPointer("position"), 3, webGLProgram.getContext().FLOAT, false, 0, 0);
-      webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.positions), webGLProgram.getContext().STATIC_DRAW);
+
+      if (webGLProgram.getShaderBuilder().getMode() != "normal") {
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.positions), webGLProgram.getContext().STATIC_DRAW);
+      } else {
+        var positions = _get(_getPrototypeOf(Plan.prototype), "generateNormalPositions", this).call(this);
+
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(positions), webGLProgram.getContext().STATIC_DRAW);
+      }
     }
   }, {
     key: "_sendVertexNormals",
@@ -1774,11 +1847,24 @@ function (_Object3D) {
 
       webGLProgram.getContext().uniformMatrix4fv(webGLProgram.getShaderBuilder().getPointer("localTransformation"), false, processedMatrix); //Index
 
-      webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, webGLProgram.getBuffer("index"));
-      webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW); //Draw
-
       webGLProgram.getContext().disable(webGLProgram.getContext().CULL_FACE);
-      webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+      webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, webGLProgram.getBuffer("index")); //Draw
+
+      if (webGLProgram.getShaderBuilder().getMode() == "line") {
+        var indexes = _get(_getPrototypeOf(Plan.prototype), "toLines", this).call(this, this.indexes);
+
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(indexes), webGLProgram.getContext().STATIC_DRAW); //Draw
+
+        webGLProgram.getContext().drawElements(webGLProgram.getContext().LINES, indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+      } else if (webGLProgram.getShaderBuilder().getMode() == "normal") {
+        webGLProgram.getContext().uniform4fv(webGLProgram.getShaderBuilder().getPointer("normalColor"), false, webGLProgram.getShaderBuilder().getNormalColor());
+        webGLProgram.getContext().drawArrays(webGLProgram.getContext().LINES, 0, this.normals.length * 2);
+      } else {
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW); //Draw
+
+        webGLProgram.getContext().drawElements(webGLProgram.getContext().TRIANGLES, this.indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
+      }
+
       webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE); //Mirror PostSettings
 
       for (var _text in this.textures) {
@@ -1847,9 +1933,44 @@ function () {
   }
 
   _createClass(Renderer, [{
+    key: "setInitUserFunction",
+    value: function setInitUserFunction(func) {
+      this.initUser = func;
+    }
+  }, {
+    key: "setEndUserFunction",
+    value: function setEndUserFunction(func) {
+      this.endUser = func;
+    }
+  }, {
     key: "render",
     value: function render(webGLProgram) {
       this.initUser(webGLProgram);
+
+      if (this.scene.getShaderBuilder() != webGLProgram.actualShaderBuilder) {
+        webGLProgram.actualShaderBuilder = this.scene.getShaderBuilder();
+      }
+
+      if (!webGLProgram.actualShaderBuilder.checkLights(this.scene.getNbAmbientLights(), this.scene.getNbDirectionalLights(), this.scene.getNbPointLights(), this.scene.getNbSpotLights())) {
+        webGLProgram.actualShaderBuilder.buildShaderProgram(webGLProgram.getContext(), this.scene);
+      } else if (webGLProgram.actualShaderBuilder.needRebuild()) {
+        webGLProgram.actualShaderBuilder.buildShaderProgram(webGLProgram.getContext(), this.scene);
+      }
+
+      webGLProgram.getContext().useProgram(webGLProgram.actualShaderBuilder.getShaderProgram()); //Création des buffers
+
+      webGLProgram.buffers = [];
+      webGLProgram.buffers["index"] = webGLProgram.getContext().createBuffer();
+      var attributs = webGLProgram.actualShaderBuilder.getActiveAttributes();
+
+      for (var a in attributs) {
+        webGLProgram.buffers[attributs[a]] = webGLProgram.getContext().createBuffer();
+      }
+
+      webGLProgram.getContext().viewport(this.viewport[0] * webGLProgram.canvas.width, this.viewport[1] * webGLProgram.canvas.height, this.viewport[2] * webGLProgram.canvas.width, this.viewport[3] * webGLProgram.canvas.height); //Shader uniforms
+      //gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("depthTexture"), false, 0);
+
+      webGLProgram.getContext().uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(webGLProgram.getContext().canvas.clientWidth * this.viewport[2] / (webGLProgram.getContext().canvas.clientHeight * this.viewport[3])));
       this.memory = [];
 
       if (this.resetConfigAtEnd) {
@@ -1947,6 +2068,16 @@ function () {
       this.endUser(webGLProgram);
     }
   }, {
+    key: "setViewPort",
+    value: function setViewPort(x, y, width, height) {
+      this.viewport = [x, y, width, height];
+    }
+  }, {
+    key: "getViewPort",
+    value: function getViewPort() {
+      return this.viewport;
+    }
+  }, {
     key: "setInitFunction",
     value: function setInitFunction(func) {
       this.initUser = func;
@@ -1988,9 +2119,8 @@ function () {
         gl.getParameter(gl.SCISSOR_BOX);
       } else {
         gl.disable(gl.SCISSOR_TEST);
-      }
+      } //Initialisation
 
-      gl.viewport(this.viewport[0] * webGLProgram.canvas.width, this.viewport[1] * webGLProgram.canvas.height, this.viewport[2] * webGLProgram.canvas.width, this.viewport[3] * webGLProgram.canvas.height); //Initialisation
 
       var colors = this.scene.getClearColor();
       gl.clearColor(colors[0], colors[1], colors[2], colors[3]);
@@ -2002,11 +2132,7 @@ function () {
 
       for (var i = 0; i < attributs.length; i++) {
         gl.enableVertexAttribArray(webGLProgram.actualShaderBuilder.getPointer(attributs[i]));
-      } //Shader uniforms
-      //gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("depthTexture"), false, 0);
-
-
-      gl.uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(gl.canvas.clientWidth / gl.canvas.clientHeight));
+      }
     }
   }, {
     key: "_stateMemory",
@@ -2047,6 +2173,27 @@ function () {
       } else {
         webGLProgram.getContext().disable(webGLProgram.getContext().CULL_FACE);
       }
+    }
+  }, {
+    key: "clone",
+    value: function clone() {
+      var neww = new this.constructor();
+
+      if (this.scissor == null) {
+        neww.scissor = null;
+      } else {
+        neww.scissor = this.scissor.slice();
+      }
+
+      neww.scene = this.scene;
+      Object.assign(neww.transforms, this.transforms);
+      neww.init = this.init;
+      neww.resetConfigAtEnd = this.resetConfigAtEnd;
+      neww.memory = [];
+      neww.viewport = this.viewport.slice();
+      neww.initUser = this.initUser;
+      neww.endUser = this.endUser;
+      return neww;
     }
   }]);
 
@@ -2145,6 +2292,11 @@ function () {
   }, {
     key: "addCamera",
     value: function addCamera(name, camera) {
+      if (typeof name != "string") {
+        movement = name;
+        name = "movement" + this.id;
+      }
+
       this.cameras[name] = camera;
 
       if (this.activeCamera == null) {
@@ -2174,6 +2326,11 @@ function () {
   }, {
     key: "addLight",
     value: function addLight(name, light) {
+      if (typeof name != "string") {
+        movement = name;
+        name = "movement" + this.id;
+      }
+
       if (light instanceof AmbientLight) {
         this.ambientLights[name] = light;
       } else if (light instanceof DirectionalLight) {
@@ -2246,6 +2403,11 @@ function () {
   }, {
     key: "add3DObject",
     value: function add3DObject(name, object) {
+      if (typeof name != "string") {
+        movement = name;
+        name = "movement" + this.id;
+      }
+
       this.objects[name] = object;
     }
   }, {
@@ -2272,6 +2434,11 @@ function () {
     key: "getShaderBuilder",
     value: function getShaderBuilder() {
       return this.shaderBuilder;
+    }
+  }, {
+    key: "setShaderBuilder",
+    value: function setShaderBuilder(sb) {
+      this.shaderBuilder = sb;
     }
   }, {
     key: "render",
@@ -2341,12 +2508,17 @@ function () {
 
     this.vertexSrc = null;
     this.fragmentSrc = null;
-    this.lastShaderProgram = null; //Lights configuration
+    this.lastShaderProgram = null;
+    this.triangleMode = true;
+    this.normalDisplay = false;
+    this.normalColor = [1, 1, 1, 1];
+    this.mode = "triangle"; //Lights configuration
 
     this.ambientLights = [];
     this.directionalLights = [];
     this.pointLights = [];
-    this.spotLights = []; //Vertex Shader Attributes
+    this.spotLights = [];
+    this.needReBuild = true; //Vertex Shader Attributes
 
     this.vertexAttributes = {
       "position": true
@@ -2373,7 +2545,8 @@ function () {
     this.fragmentUniforms = {
       "texture": true,
       // ALWAYS TRUE
-      "opacity": true //"depthTexture" : true,
+      "opacity": true,
+      "normalColor": false //"depthTexture" : true,
 
     };
     this.infos = {
@@ -2438,6 +2611,10 @@ function () {
       "mirrorPoint": {
         "type": "uniform vec4",
         "name": "uMirrorPoint"
+      },
+      "normalColor": {
+        "type": "uniform lowp vec4",
+        "name": "uNormalColor"
       } // "depthTexture" : {
       // 	"type" : "uniform bool",
       // 	"name" : "uDepthTextureActive",
@@ -2456,12 +2633,60 @@ function () {
       "mirrorVec1": null,
       "mirrorVec2": null,
       "mirrorPoint": null,
-      "opacity": null //"depthTexture" : null,
+      "opacity": null,
+      "normalColor": null //"depthTexture" : null,
 
     };
   }
 
   _createClass(ShaderBuilder, [{
+    key: "needRebuild",
+    value: function needRebuild() {
+      return this.needReBuild;
+    }
+  }, {
+    key: "getMode",
+    value: function getMode() {
+      return this.mode;
+    }
+  }, {
+    key: "setMode",
+    value: function setMode(mode) {
+      if (mode != this.mode) {
+        this.needReBuild = true;
+        this.mode = mode;
+
+        if (mode == "line") {
+          this.triangleMode = false;
+          this.normalDisplay = false;
+          this.fragmentAttributes["normal"] = true;
+          this.fragmentAttributes["textureCoordonnees"] = true;
+          this.fragmentAttributes["color"] = false;
+          this.fragmentUniforms["normalColor"] = false;
+          this.fragmentUniforms["texture"] = true;
+          this.fragmentUniforms["opacity"] = true;
+        } else if (mode == "normal") {
+          this.triangleMode = false;
+          this.normalDisplay = true;
+          this.fragmentAttributes["color"] = false;
+          this.fragmentAttributes["normal"] = false;
+          this.fragmentAttributes["textureCoordonnees"] = false;
+          this.fragmentUniforms["normalColor"] = true;
+          this.fragmentUniforms["texture"] = false;
+          this.fragmentUniforms["opacity"] = false;
+        } else {
+          this.triangleMode = true;
+          this.normalDisplay = false;
+          this.fragmentAttributes["color"] = false;
+          this.fragmentAttributes["normal"] = true;
+          this.fragmentAttributes["textureCoordonnees"] = true;
+          this.fragmentUniforms["normalColor"] = false;
+          this.fragmentUniforms["texture"] = true;
+          this.fragmentUniforms["opacity"] = true;
+        }
+      }
+    }
+  }, {
     key: "getPointer",
     value: function getPointer(value) {
       return this.pointers[value];
@@ -2522,6 +2747,16 @@ function () {
       }
 
       return true;
+    }
+  }, {
+    key: "getNormalColor",
+    value: function getNormalColor() {
+      return this.normalColor;
+    }
+  }, {
+    key: "setNormalColor",
+    value: function setNormalColor(r, g, b, a) {
+      this.normalColor = [r, g, b, a];
     }
   }, {
     key: "getShaderProgram",
@@ -2648,6 +2883,8 @@ function () {
       this._buildVertexShader();
 
       this._buildFragmentShader();
+
+      this.needReBuild = false;
     }
   }, {
     key: "_buildVertexShader",
@@ -2682,10 +2919,12 @@ function () {
 
       this.vertexSrc += "\n\t\t\tvec4 translate(vec4 v, vec4 transVec){\n\t\t\t\treturn (mat4(\n\t\t\t\t\t\t1.0, 0.0, 0.0, 0.0, \n\t\t\t\t\t  0.0, 1.0, 0.0, 0.0, \n\t\t\t\t\t  0.0, 0.0, 1.0, 0.0,  \n\t\t\t\t\t  transVec.x, transVec.y, transVec.z, transVec.w) * v);\n\t\t\t}\n\t\t"; //Point Light
 
-      for (var n in this.pointLights) {
-        this.vertexSrc += this.pointLights[n].getVertexShaderPreCode({
-          "name": n
-        });
+      if (this.mode != "normal") {
+        for (var n in this.pointLights) {
+          this.vertexSrc += this.pointLights[n].getVertexShaderPreCode({
+            "name": n
+          });
+        }
       }
 
       this.vertexSrc += "void main() {"; //Fragment Atributes
@@ -2714,14 +2953,16 @@ function () {
         this.vertexSrc += "gl_Position = translate(gl_Position, scale(newVec(gl_Position, mirrorTransp), 2.));"; //this.vertexSrc += "gl_Position = translate(gl_Position, scale(uMirrorVec1, 2.0));";
 
         this.vertexSrc += '}';
-      } //Point Light
+      }
 
-
-      for (var _n4 in this.pointLights) {
-        this.vertexSrc += this.pointLights[_n4].getVertexShaderMainCode({
-          "position": this.infos[_n4 + "_position"],
-          "name": _n4
-        });
+      if (this.mode != "normal") {
+        //Point Light
+        for (var _n4 in this.pointLights) {
+          this.vertexSrc += this.pointLights[_n4].getVertexShaderMainCode({
+            "position": this.infos[_n4 + "_position"],
+            "name": _n4
+          });
+        }
       } //Projection
 
 
@@ -2747,13 +2988,15 @@ function () {
         if (this.fragmentUniforms[u]) {
           this.fragmentSrc += this.infos[u].type + " " + this.infos[u].name + ";";
         }
-      } //Point Light
+      }
 
-
-      for (var n in this.pointLights) {
-        this.fragmentSrc += this.pointLights[n].getFragmentShaderPreCode({
-          "name": n
-        });
+      if (this.mode != "normal") {
+        //Point Light
+        for (var n in this.pointLights) {
+          this.fragmentSrc += this.pointLights[n].getFragmentShaderPreCode({
+            "name": n
+          });
+        }
       }
 
       this.fragmentSrc += "void main() {"; //Color
@@ -2764,31 +3007,35 @@ function () {
       } else if (this.fragmentAttributes["textureCoordonnees"]) {
         this.fragmentSrc += "gl_FragColor = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
       } //this.fragmentSrc += "}"
-      //LIGHTS
 
 
-      for (var _n5 in this.ambientLights) {
-        this.fragmentSrc += this.ambientLights[_n5].getFragmentShaderMainCode({
-          "name": this.infos[_n5].name
-        });
-      }
+      if (this.mode != "normal") {
+        //LIGHTS
+        for (var _n5 in this.ambientLights) {
+          this.fragmentSrc += this.ambientLights[_n5].getFragmentShaderMainCode({
+            "name": this.infos[_n5].name
+          });
+        }
 
-      for (var _n6 in this.directionalLights) {
-        this.fragmentSrc += this.directionalLights[_n6].getFragmentShaderMainCode({
-          "normal": this.infos["normal"],
-          "color": this.infos[_n6 + "_color"],
-          "vector": this.infos[_n6 + "_vector"],
-          "name": _n6
-        });
-      }
+        for (var _n6 in this.directionalLights) {
+          this.fragmentSrc += this.directionalLights[_n6].getFragmentShaderMainCode({
+            "normal": this.infos["normal"],
+            "color": this.infos[_n6 + "_color"],
+            "vector": this.infos[_n6 + "_vector"],
+            "name": _n6
+          });
+        }
 
-      for (var _n7 in this.pointLights) {
-        this.fragmentSrc += this.pointLights[_n7].getFragmentShaderMainCode({
-          "normal": this.infos["normal"],
-          "color": this.infos[_n7 + "_color"],
-          "position": this.infos[_n7 + "_position"],
-          "name": _n7
-        });
+        for (var _n7 in this.pointLights) {
+          this.fragmentSrc += this.pointLights[_n7].getFragmentShaderMainCode({
+            "normal": this.infos["normal"],
+            "color": this.infos[_n7 + "_color"],
+            "position": this.infos[_n7 + "_position"],
+            "name": _n7
+          });
+        }
+      } else {
+        this.fragmentSrc += "gl_FragColor = " + this.infos["normalColor"].name + ";";
       } //Transparency
 
 
@@ -2801,6 +3048,31 @@ function () {
 
       this.fragmentSrc += "}";
       console.log(this.fragmentSrc);
+    }
+  }, {
+    key: "clone",
+    value: function clone() {
+      var neww = new this.constructor();
+      neww.vertexSrc = this.vertexSrc;
+      neww.fragmentSrc = this.fragmentSrc;
+      neww.lastShaderProgram = this.lastShaderProgram;
+      neww.triangleMode = this.triangleMode;
+      neww.normalDisplay = this.normalDisplay;
+      neww.normalColor = this.normalColor.slice();
+      neww.mode = this.mode; //Lights configuration
+
+      Object.assign(neww.ambientLights, this.ambientLights);
+      Object.assign(neww.directionalLights, this.directionalLights);
+      Object.assign(neww.pointLights, this.pointLights);
+      Object.assign(neww.spotLights, this.spotLights);
+      neww.needReBuild = this.needReBuild;
+      Object.assign(neww.vertexAttributes, this.vertexAttributes);
+      Object.assign(neww.fragmentAttributes, this.fragmentAttributes);
+      Object.assign(neww.vertexUniforms, this.vertexUniforms);
+      Object.assign(neww.fragmentUniforms, this.fragmentUniforms);
+      Object.assign(neww.infos, this.infos);
+      Object.assign(neww.pointers, this.pointers);
+      return neww;
     }
   }]);
 
@@ -3400,25 +3672,6 @@ function () {
 
 
       for (var i = 0; i < this.scenes.length; i++) {
-        if (this.scenes[i].getShaderBuilder() != this.actualShaderBuilder) {
-          this.actualShaderBuilder = this.scenes[i].getShaderBuilder();
-        }
-
-        if (!this.actualShaderBuilder.checkLights(this.scenes[i].getNbAmbientLights(), this.scenes[i].getNbDirectionalLights(), this.scenes[i].getNbPointLights(), this.scenes[i].getNbSpotLights())) {
-          this.actualShaderBuilder.buildShaderProgram(this.gl, this.scenes[i]);
-        }
-
-        this.shaderProgram = this.actualShaderBuilder.getShaderProgram();
-        this.gl.useProgram(this.shaderProgram); //Création des buffers
-
-        this.buffers = [];
-        this.buffers["index"] = this.gl.createBuffer();
-        var attributs = this.actualShaderBuilder.getActiveAttributes();
-
-        for (var a in attributs) {
-          this.buffers[attributs[a]] = this.gl.createBuffer();
-        }
-
         this.scenes[i].render(this);
       } //Next Frame
 
@@ -3859,124 +4112,6 @@ var Cube = require("../class/Objects3D/Cube.class.js");
 
 var AmbientLight = require("../class/Lights/AmbientLight.class.js");
 
-var Scene = require("../class/Scene.class.js");
-
-var Rotate = require("../class/Movements/Rotate.class.js");
-
-var LookAt = require("../class/Movements/LookAt.class.js");
-
-var Object3DGroup = require("../class/Objects3D/Object3DGroup.class.js");
-
-var Renderer = require("../class/Renderer.class.js");
-
-module.exports = function () {
-  var program = new WebGLProgram();
-  program.insertInBlock(document.getElementById("display"));
-  program.setUpdateOnResize(true);
-  program.enableFPSCounter(function (fps) {
-    document.getElementById("fpsCounter").innerHTML = "Frame per second : " + fps;
-  }, 300);
-  var scene = new Scene(); //Cubes
-
-  var cube1 = new Cube();
-  cube1.setPosition(-1, 0, -11);
-  scene.add3DObject("cube1", cube1);
-  var texture1 = program.createColorTexture(0, 0, 1, 1);
-  cube1.addTexture("color", texture1);
-  var cube2 = new Cube();
-  cube2.setPosition(0, 0, -10);
-  scene.add3DObject("cube2", cube2);
-  var texture2 = program.createColorTexture(0, 1, 0, 1);
-  cube2.addTexture("color", texture2);
-  var cube3 = new Cube();
-  cube3.setPosition(1, 0, -11);
-  scene.add3DObject("cube3", cube3);
-  var texture3 = program.createColorTexture(1, 0, 0, 1);
-  cube3.addTexture("color", texture3);
-  scene.setClearColor(0, 0, 0, 1);
-  program.setScene(scene); //Carré invisible en haut à droite
-
-  var isClicked = false;
-  var clickX = null;
-  var clickY = null;
-  var renderer = new Renderer(scene, function (program) {
-    //BEFORE
-    scene.setClearColor(0, 0, 0, 0);
-  }, function (program) {
-    //AFTER
-    scene.setClearColor(0, 0, 0, 1);
-  });
-  renderer.setScissor(0.8, 0, 0.2, 0.2);
-  var depthTexture = program.getContext().createTexture();
-  var rendererClick = new Renderer(scene, function (program) {
-    //BEFORE
-    var gl = program.getContext();
-    program.enableDepthTexture(); //gl.colorMask(false, false, false, false);
-    // Create the depth texture
-
-    var width = program.getCanvas().width;
-    var height = program.getCanvas().height;
-    var framebuffer = gl.createFramebuffer();
-    gl.bindTexture(gl.TEXTURE_2D, depthTexture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT, width, height, 0, gl.DEPTH_COMPONENT, gl.UNSIGNED_INT, null); //Create a color texture
-
-    var colorTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, colorTexture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, colorTexture, 0);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTexture, 0);
-    gl.uniform1i(program.actualShaderBuilder.getPointer("depthTexture"), true, 0);
-    gl.clear(gl.DEPTH_BUFFER_BIT);
-  }, function (program) {
-    //AFTER
-    //Read
-    var read = new Uint8Array(4);
-    program.getContext().readPixels(Math.floor(program.getCanvas().width / 2), Math.floor(program.getCanvas().height / 2), 1, 1, program.getContext().RGBA, program.getContext().UNSIGNED_BYTE, read);
-    console.log(read); //Restart
-
-    program.getContext().bindFramebuffer(program.getContext().FRAMEBUFFER, null);
-    program.disableDepthTexture();
-    program.getContext().colorMask(true, true, true, true);
-    isClicked = false;
-  });
-  rendererClick.setInitialisation(false);
-  rendererClick.setResetConfigAtEnd(true); //Click selection :
-
-  program.getCanvas().addEventListener("click", function (event) {
-    clickX = event.clientX;
-    clickY = event.clientY;
-    isClicked = true;
-  });
-  scene.addRenderer(renderer);
-  scene.addRenderer(rendererClick);
-  var camera = new Camera();
-  camera.setType("perspective", {});
-  camera.setPosition(0, 0, 10);
-  scene.addCamera("main", camera);
-  scene.setCamera("main");
-  program.start();
-  window.addEventListener('DOMContentLoaded', function (event) {});
-};
-},{"../class/Camera.class.js":1,"../class/Lights/AmbientLight.class.js":7,"../class/Movements/LookAt.class.js":11,"../class/Movements/Rotate.class.js":12,"../class/Objects3D/Cube.class.js":15,"../class/Objects3D/Object3DGroup.class.js":16,"../class/Renderer.class.js":18,"../class/Scene.class.js":19,"../class/WebGLProgram.class.js":26}],32:[function(require,module,exports){
-"use strict";
-
-var WebGLProgram = require("../class/WebGLProgram.class.js");
-
-var Camera = require("../class/Camera.class.js");
-
-var Cube = require("../class/Objects3D/Cube.class.js");
-
-var AmbientLight = require("../class/Lights/AmbientLight.class.js");
-
 var DirectionalLight = require("../class/Lights/DirectionalLight.class.js");
 
 var Scene = require("../class/Scene.class.js");
@@ -4063,7 +4198,7 @@ module.exports = function () {
   program.start();
   window.addEventListener('DOMContentLoaded', function (event) {});
 };
-},{"../class/Camera.class.js":1,"../class/Lights/AmbientLight.class.js":7,"../class/Lights/DirectionalLight.class.js":8,"../class/Movements/LookAt.class.js":11,"../class/Movements/Rotate.class.js":12,"../class/Objects3D/Cube.class.js":15,"../class/Objects3D/Object3DGroup.class.js":16,"../class/Renderer.class.js":18,"../class/Scene.class.js":19,"../class/WebGLProgram.class.js":26}],33:[function(require,module,exports){
+},{"../class/Camera.class.js":1,"../class/Lights/AmbientLight.class.js":7,"../class/Lights/DirectionalLight.class.js":8,"../class/Movements/LookAt.class.js":11,"../class/Movements/Rotate.class.js":12,"../class/Objects3D/Cube.class.js":15,"../class/Objects3D/Object3DGroup.class.js":16,"../class/Renderer.class.js":18,"../class/Scene.class.js":19,"../class/WebGLProgram.class.js":26}],32:[function(require,module,exports){
 "use strict";
 
 var WebGLProgram = require("../class/WebGLProgram.class.js");
@@ -4168,7 +4303,202 @@ module.exports = function () {
   program.start();
   window.addEventListener('DOMContentLoaded', function (event) {});
 };
-},{"../class/Camera.class.js":1,"../class/Lights/AmbientLight.class.js":7,"../class/Lights/DirectionalLight.class.js":8,"../class/Lights/PointLight.class.js":9,"../class/Movements/LookAt.class.js":11,"../class/Movements/Rotate.class.js":12,"../class/Objects3D/Cube.class.js":15,"../class/Objects3D/Object3DGroup.class.js":16,"../class/Renderer.class.js":18,"../class/Scene.class.js":19,"../class/WebGLProgram.class.js":26}],34:[function(require,module,exports){
+},{"../class/Camera.class.js":1,"../class/Lights/AmbientLight.class.js":7,"../class/Lights/DirectionalLight.class.js":8,"../class/Lights/PointLight.class.js":9,"../class/Movements/LookAt.class.js":11,"../class/Movements/Rotate.class.js":12,"../class/Objects3D/Cube.class.js":15,"../class/Objects3D/Object3DGroup.class.js":16,"../class/Renderer.class.js":18,"../class/Scene.class.js":19,"../class/WebGLProgram.class.js":26}],33:[function(require,module,exports){
+"use strict";
+
+var WebGLProgram = require("../class/WebGLProgram.class.js");
+
+var Camera = require("../class/Camera.class.js");
+
+var Cube = require("../class/Objects3D/Cube.class.js");
+
+var AmbientLight = require("../class/Lights/AmbientLight.class.js");
+
+var PointLight = require("../class/Lights/PointLight.class.js");
+
+var Scene = require("../class/Scene.class.js");
+
+var Rotate = require("../class/Movements/Rotate.class.js");
+
+var LookAt = require("../class/Movements/LookAt.class.js");
+
+var Object3DGroup = require("../class/Objects3D/Object3DGroup.class.js");
+
+var Renderer = require("../class/Renderer.class.js");
+
+module.exports = function () {
+  var program = new WebGLProgram();
+  program.insertInBlock(document.getElementById("display"));
+  program.setUpdateOnResize(true);
+  program.enableFPSCounter(function (fps) {
+    document.getElementById("fpsCounter").innerHTML = "Frame per second : " + fps;
+  }, 300);
+  var scene = new Scene(); //Cubes
+
+  var cube1 = new Cube();
+  cube1.setPosition(-1, 0, -1);
+  scene.add3DObject("cube1", cube1);
+  var texture1 = program.createColorTexture(0, 0, 1, 1);
+  cube1.addTexture("color", texture1);
+  var cube2 = new Cube();
+  cube2.setPosition(0, 0, -0);
+  scene.add3DObject("cube2", cube2);
+  var texture2 = program.createColorTexture(0, 1, 0, 1);
+  cube2.addTexture("color", texture2);
+  var cube3 = new Cube();
+  cube3.setPosition(1, 0, -1);
+  scene.add3DObject("cube3", cube3);
+  var texture3 = program.createColorTexture(1, 0, 0, 1);
+  cube3.addTexture("color", texture3);
+  var rotate1 = new Rotate(360, [0, 1, 0], 1000, function () {
+    rotate1.reset();
+  });
+  var rotate11 = new Rotate(360, [1, 0, 1], 1300, function () {
+    rotate11.reset();
+  });
+  var rotate111 = new Rotate(360, [1, 1, 1], 1300, function () {
+    rotate111.reset();
+  });
+  rotate111.setPosition(1, 0, 1);
+  var rotate2 = new Rotate(360, [0, 1, 0], 700, function () {
+    rotate2.reset();
+  });
+  var rotate22 = new Rotate(360, [0, 1, 1], 1000, function () {
+    rotate22.reset();
+  });
+  var rotate3 = new Rotate(360, [0, 1, 0], 800, function () {
+    rotate3.reset();
+  });
+  var rotate33 = new Rotate(360, [1, 1, 0], 1000, function () {
+    rotate33.reset();
+  });
+  var rotate333 = new Rotate(360, [1, 1, -1], 1000, function () {
+    rotate333.reset();
+  });
+  rotate333.setPosition(-1, 0, 1);
+  rotate1.start();
+  rotate11.start();
+  rotate111.start();
+  rotate2.start();
+  rotate22.start();
+  rotate3.start();
+  rotate33.start();
+  rotate333.start();
+  cube1.addMovement(rotate1);
+  cube1.addMovement(rotate11);
+  cube1.addMovement(rotate111);
+  cube2.addMovement(rotate2);
+  cube2.addMovement(rotate22);
+  cube3.addMovement(rotate3);
+  cube3.addMovement(rotate33);
+  cube3.addMovement(rotate333);
+  scene.setClearColor(0, 0, 0, 1);
+  program.setScene(scene); //Carré invisible en haut à droite
+
+  var isClicked = false;
+  var clickX = null;
+  var clickY = null;
+  var cameraTL = new Camera();
+  cameraTL.setType("perspective", {});
+  cameraTL.setPosition(0, 0, 5);
+  scene.addCamera("tl", cameraTL);
+  scene.setCamera("tl");
+  var cameraTR = new Camera();
+  cameraTR.setType("perspective", {});
+  cameraTR.setPosition(5, 0, 0);
+  var lookAtTR = new LookAt(cube2, [0, 1, 0]);
+  cameraTR.addMovement("lookat", lookAtTR);
+  scene.addCamera("tr", cameraTR);
+  var cameraBL = new Camera();
+  cameraBL.setType("perspective", {});
+  cameraBL.setPosition(0, 5, 0);
+  var lookAtBL = new LookAt(cube2, [1, 0, 0]);
+  cameraBL.addMovement("lookat", lookAtBL);
+  scene.addCamera("bl", cameraBL);
+  var cameraBR = new Camera();
+  cameraBR.setType("orthogonal", {});
+  cameraBR.setPosition(0, 0, -5);
+  var lookAtBR = new LookAt(cube2, [1, 0, 0]);
+  cameraBR.addMovement("lookat", lookAtBR);
+  scene.addCamera("br", cameraBR); //Light
+
+  var ambient = new AmbientLight();
+  ambient.setPower(1.);
+  ambient.setRGB(1., 1., 1.);
+  scene.addLight("ambient", ambient);
+  var point = new PointLight();
+  point.setPower(1.);
+  point.setPosition(0, 0, 3);
+  point.setRGB(1., 0.8, 0.8); //scene.addLight("point", point);
+  //TOP LEFT
+
+  var renderTL = scene.getRenderer(0);
+  renderTL.setViewPort(0, 0.5, 0.5, 0.5); //affichage des normals
+
+  var renderTLNormals = renderTL.clone();
+  renderTLNormals.setInitialisation(false);
+  var shader = scene.getShaderBuilder();
+  var nShader = shader.clone(); // Normal Shader
+
+  nShader.setMode("normal");
+  renderTLNormals.setInitUserFunction(function (program) {
+    scene.setShaderBuilder(nShader);
+  });
+  renderTLNormals.setEndUserFunction(function (program) {
+    scene.setShaderBuilder(shader);
+  });
+  scene.addRenderer(renderTLNormals); //TOP RIGHT
+
+  var renderTR = new Renderer(scene, function (program) {
+    //BEFORE
+    scene.setCamera("tr");
+  }, function (program) {//AFTER
+  });
+  renderTR.setViewPort(0.5, 0.5, 0.5, 0.5);
+  renderTR.setInitialisation(false);
+  scene.addRenderer(renderTR); //Bottom left
+
+  var renderBL = new Renderer(scene, function (program) {
+    //BEFORE
+    scene.setCamera("bl");
+  }, function (program) {//AFTER
+  });
+  renderBL.setViewPort(0., 0., 0.5, 0.5);
+  renderBL.setInitialisation(false);
+  scene.addRenderer(renderBL); //bottom right
+
+  var renderBR = new Renderer(scene, function (program) {
+    //BEFORE
+    scene.setCamera("br");
+  }, function (program) {
+    //AFTER
+    scene.setCamera("tl");
+  });
+  renderBR.setViewPort(0.5, 0., 0.5, 0.5);
+  renderBR.setInitialisation(false);
+  scene.addRenderer(renderBR); //ENCADRE A DROITE
+
+  var renderer = new Renderer(scene, function (program) {
+    //BEFORE
+    scene.setClearColor(0, 0, 0, 0);
+  }, function (program) {
+    //AFTER
+    scene.setClearColor(0, 0, 0, 1);
+  });
+  renderer.setScissor(0.8, 0, 0.2, 0.2);
+  scene.addRenderer(renderer);
+  program.start();
+  window.addEventListener('DOMContentLoaded', function (event) {
+    document.getElementById("switch").addEventListener("click", function (event) {
+      if (scene.getShaderBuilder().getMode() == "triangle") {
+        scene.getShaderBuilder().setMode("line");
+      } else {
+        scene.getShaderBuilder().setMode("triangle");
+      }
+    });
+  });
+};
+},{"../class/Camera.class.js":1,"../class/Lights/AmbientLight.class.js":7,"../class/Lights/PointLight.class.js":9,"../class/Movements/LookAt.class.js":11,"../class/Movements/Rotate.class.js":12,"../class/Objects3D/Cube.class.js":15,"../class/Objects3D/Object3DGroup.class.js":16,"../class/Renderer.class.js":18,"../class/Scene.class.js":19,"../class/WebGLProgram.class.js":26}],34:[function(require,module,exports){
 /*!
 @fileoverview gl-matrix - High performance matrix and vector operations
 @author Brandon Jones

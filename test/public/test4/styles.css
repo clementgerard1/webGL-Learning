@@ -9,28 +9,6 @@
 }
 
 body{
-	background-color:red;
+	background-color:black;
 }
 
-
-#fps{
-	position : absolute;
-	left : 80vw;
-	top : 0;
-	width : 20vw;
-	height : 20vh;
-	z-index : -1;
-	background-color : white;
-	display : flex;
-	align-items: center;
-	justify-content: center;
-	flex-direction: column;
-	padding : 5px;
-}
-
-#fps p{
-	width : 100%;
-	text-align: center;
-	margin-top : 15px;
-	margin-bottom : 15px;
-}

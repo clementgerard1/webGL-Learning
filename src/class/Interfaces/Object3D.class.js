@@ -30,10 +30,17 @@ class Object3D{
     this.textures = [];
     this.textureCoordonnees = [];
 
+    this.positions = [];
+    this.normals = [];
+
 	}
 
 	addMovement(name, movement){
-      this.movements[name] = movement;
+    if(typeof name != "string"){
+      movement = name;
+      name = "movement" + this.id;
+    }
+    this.movements[name] = movement;
   }
 
   removeMovement(name){
@@ -41,8 +48,12 @@ class Object3D{
   }
 
   addTexture(name, texture){
-      this.textures[name] = texture;
-      this._checkTransparency();
+    if(typeof name != "string"){
+      movement = name;
+      name = "movement" + this.id;
+    }
+    this.textures[name] = texture;
+    this._checkTransparency();
   }
 
   removeTexture(name){
@@ -195,6 +206,20 @@ class Object3D{
     return norms;
   }
 
+  generateNormalPositions(that){
+    const positions = [];
+    for(let i = 0 ; i < that.normals.length / 3; i++){
+      positions[positions.length] = that.positions[i*3];
+      positions[positions.length] = that.positions[i*3+1];
+      positions[positions.length] = that.positions[i*3+2];
+      positions[positions.length] = that.positions[i*3] + that.normals[i*3];
+      positions[positions.length] = that.positions[i*3+1] + that.normals[i*3+1];
+      positions[positions.length] = that.positions[i*3+2] + that.normals[i*3+2];
+    }
+
+    return positions;
+  }
+
 	draw(webGLProgram){
 		if(this.transparency){
 			webGLProgram.getContext().depthMask(false);
@@ -203,6 +228,24 @@ class Object3D{
 		}
 		webGLProgram.getContext().uniform1f(webGLProgram.getShaderBuilder().getPointer("opacity"), this.opacity);
 	}
+
+  toLines(indexes){
+    const result = [];
+    for(let i = 0 ; i < indexes.length / 3 ; i++){
+      //Line 1
+      result[result.length] = indexes[i*3];
+      result[result.length] = indexes[i*3 + 1];
+
+      //Line 2
+      result[result.length] = indexes[i*3 + 1];
+      result[result.length] = indexes[i*3 + 2];
+
+      //Line 3
+      result[result.length] = indexes[i*3 + 2];
+      result[result.length] = indexes[i*3];
+    }
+    return result;
+  }
 
   _orderPositionsByDistance(cameraPosition, transform){
     //On calcul le centre de chaque triangle

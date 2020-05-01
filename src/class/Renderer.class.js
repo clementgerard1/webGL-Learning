@@ -22,9 +22,42 @@ class Renderer{
 		}
 	}
 
+	setInitUserFunction(func){
+		this.initUser = func;
+	}
+
+	setEndUserFunction(func){
+		this.endUser = func;
+	}
+
 	render(webGLProgram){
-		
+
 		this.initUser(webGLProgram);
+
+		if(this.scene.getShaderBuilder() != webGLProgram.actualShaderBuilder){
+			webGLProgram.actualShaderBuilder = this.scene.getShaderBuilder();
+		}
+
+		if(!webGLProgram.actualShaderBuilder.checkLights(this.scene.getNbAmbientLights(), this.scene.getNbDirectionalLights(), this.scene.getNbPointLights(), this.scene.getNbSpotLights())){
+			webGLProgram.actualShaderBuilder.buildShaderProgram(webGLProgram.getContext(), this.scene);
+		} else if(webGLProgram.actualShaderBuilder.needRebuild()){
+			webGLProgram.actualShaderBuilder.buildShaderProgram(webGLProgram.getContext(), this.scene);
+		}
+
+		webGLProgram.getContext().useProgram(webGLProgram.actualShaderBuilder.getShaderProgram());
+
+		//Création des buffers
+		webGLProgram.buffers = [];
+		webGLProgram.buffers["index"] = webGLProgram.getContext().createBuffer();
+		const attributs = webGLProgram.actualShaderBuilder.getActiveAttributes();
+		for(let a in attributs){
+			webGLProgram.buffers[attributs[a]] = webGLProgram.getContext().createBuffer();
+		}
+
+		webGLProgram.getContext().viewport(this.viewport[0] * webGLProgram.canvas.width, this.viewport[1] * webGLProgram.canvas.height, this.viewport[2] * webGLProgram.canvas.width, this.viewport[3] * webGLProgram.canvas.height);
+		//Shader uniforms
+		//gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("depthTexture"), false, 0);
+		webGLProgram.getContext().uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix((webGLProgram.getContext().canvas.clientWidth * this.viewport[2]) / (webGLProgram.getContext().canvas.clientHeight * this.viewport[3]) ));
 
 		this.memory = [];
 
@@ -114,6 +147,14 @@ class Renderer{
 
 	}
 
+	setViewPort(x, y, width, height){
+		this.viewport = [x, y, width, height];
+	}
+
+	getViewPort(){
+		return this.viewport;
+	}
+
 	setInitFunction(func){
 		this.initUser = func;
 	}
@@ -149,8 +190,6 @@ class Renderer{
 		}else{
 			gl.disable(gl.SCISSOR_TEST);
 		}
-
-		gl.viewport(this.viewport[0] * webGLProgram.canvas.width, this.viewport[1] * webGLProgram.canvas.height, this.viewport[2] * webGLProgram.canvas.width, this.viewport[3] * webGLProgram.canvas.height);
 		//Initialisation
 		const colors = this.scene.getClearColor();
 		gl.clearColor(colors[0], colors[1], colors[2], colors[3]);
@@ -166,10 +205,6 @@ class Renderer{
 		for(let i = 0 ; i < attributs.length ; i++){
 			gl.enableVertexAttribArray(webGLProgram.actualShaderBuilder.getPointer(attributs[i]));
 		}
-
-		//Shader uniforms
-		//gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("depthTexture"), false, 0);
-		gl.uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(gl.canvas.clientWidth / gl.canvas.clientHeight));
 		
 	}
 
@@ -204,8 +239,24 @@ class Renderer{
 		}else{
 			webGLProgram.getContext().disable(webGLProgram.getContext().CULL_FACE);
 		}
+	}
 
-
+	clone(){
+		const neww = new this.constructor();
+		if(this.scissor == null){
+			neww.scissor = null;
+		}else{
+			neww.scissor = this.scissor.slice();
+		}
+		neww.scene = this.scene;
+		Object.assign(neww.transforms, this.transforms);
+		neww.init = this.init;
+		neww.resetConfigAtEnd = this.resetConfigAtEnd;
+		neww.memory = [];
+		neww.viewport = this.viewport.slice();
+		neww.initUser = this.initUser;
+		neww.endUser = this.endUser;
+    return neww;
 	}
 
 }

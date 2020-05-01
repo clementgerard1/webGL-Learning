@@ -3,6 +3,7 @@ const Camera = require("../class/Camera.class.js");
 const Cube = require("../class/Objects3D/Cube.class.js");
 const AmbientLight = require("../class/Lights/AmbientLight.class.js");
 const DirectionalLight = require("../class/Lights/DirectionalLight.class.js");
+const PointLight = require("../class/Lights/PointLight.class.js");
 const Scene = require("../class/Scene.class.js");
 const Rotate = require("../class/Movements/Rotate.class.js");
 const LookAt = require("../class/Movements/LookAt.class.js");
@@ -17,9 +18,9 @@ module.exports = function(){
 	const scene = new Scene();
 
 	//Cubes
-	const cube1 = new Cube(); cube1.setPosition(-2, 0, 0); cube1.setSize(1.);scene.add3DObject("cube1", cube1); const texture1 = program.createColorTexture(1, 0.2, 0.3, 1); cube1.addTexture("color", texture1);
-	const cube2 = new Cube();	cube2.setPosition(0, 0, 0); cube2.setSize(0.7);scene.add3DObject("cube2", cube2); const texture2 = program.createColorTexture(0.2, 0.1, 1, 1); cube2.addTexture("color", texture2);
-	const cube3 = new Cube();	cube3.setPosition(2, 0, 0); cube3.setSize(0.4);scene.add3DObject("cube3", cube3); const texture3 = program.createColorTexture(0.5, 1, 0.2, 1); cube3.addTexture("color", texture3);
+	const cube1 = new Cube(); cube1.setPosition(-2.3, 0, 0); cube1.setSize(2.);scene.add3DObject("cube1", cube1); const texture1 = program.createColorTexture(1, 0.2, 0.3, 1); cube1.addTexture("color", texture1);
+	const cube2 = new Cube();	cube2.setPosition(0, 0, -3.3); cube2.setSize(3);scene.add3DObject("cube2", cube2); const texture2 = program.createColorTexture(1, 1, 1, 1); cube2.addTexture("color", texture2);
+	const cube3 = new Cube();	cube3.setPosition(2.3, 0, 0); cube3.setSize(1.5);scene.add3DObject("cube3", cube3); const texture3 = program.createColorTexture(0.5, 1, 0.2, 1); cube3.addTexture("color", texture3);
 
 	const rotate1 = new Rotate(360, [0,1,0], 1100, function(){
 		rotate1.reset();
@@ -57,13 +58,19 @@ module.exports = function(){
 	ambient.setPower(1);
 	ambient.setRGB(1, 1, 1);
 
-	const directional = new DirectionalLight();
-	directional.setPower(1);
-	directional.setRGB(1, 1, 1);
-	directional.setDirection(-2, -2, -1);
+	const point = new PointLight();
+	point.setPower(1);
+	point.setRGB(1, 1, 1);
+	point.setPosition(0,0,1);
 
-	scene.addLight("ambiant", ambient);
-	scene.addLight("directional", directional);
+	scene.addLight("ambient", ambient);
+	scene.addLight("point", point);
+	const rotateP = new Rotate(360, [1, 0, 0], 1200, function(){
+		rotateP.reset();
+	});
+	rotateP.setPosition(0, 0, -10);
+	//point.addMovement(rotateP);
+	rotateP.start();
 
 	scene.setClearColor(0,0,0,1);
 	program.setScene(scene);
