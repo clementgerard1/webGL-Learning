@@ -27,9 +27,9 @@ module.exports = function(){
 
 	const rotate1 = new Rotate(360, [1,0,0], 10); rotate1.setRepeat(true); //rotate1.setPowSpeed(0.7);
 	const rotate11 = new Rotate(360, [1,0,0], 3000); rotate11.setRepeat(true); rotate11.setPowSpeed(1);
-	const rotate111 = new Rotate(360, [1,0,0], 3000); rotate111.setRepeat(true); rotate111.setPowSpeed(1);
+	const rotate111 = new Rotate(360, [0,1,0], 3000); rotate111.setRepeat(true); rotate111.setPowSpeed(1);
 	rotate11.setPosition(0, 0, 1.);
-	rotate111.setPosition(0, 0, 0);
+	rotate111.setPosition(0, 0, 0.);
 
 	const rotate2 = new Rotate(360, [0,1,0], 700); rotate2.setRepeat(true);
 	const rotate22 = new Rotate(360, [0,1,1], 1000); rotate22.setRepeat(true);
@@ -48,14 +48,14 @@ module.exports = function(){
 	rotate33.start();
 	rotate333.start();
 
-	//cube1.addMovement(rotate1);
+	cube1.addMovement(rotate1);
 	cube1.addMovement(rotate11);
 	cube1.addMovement(rotate111);
-	//cube2.addMovement(rotate2);
-	//cube2.addMovement(rotate22);
-	//cube3.addMovement(rotate3);
-	//cube3.addMovement(rotate33);
-	//cube3.addMovement(rotate333);
+	cube2.addMovement(rotate2);
+	cube2.addMovement(rotate22);
+	cube3.addMovement(rotate3);
+	cube3.addMovement(rotate33);
+	cube3.addMovement(rotate333);
 
 	scene.setClearColor(0,0,0,1);
 	program.setScene(scene);

@@ -417,7 +417,6 @@ function () {
         name = "movement" + Object.keys(this.movements).length;
       }
 
-      console.log(name, movement);
       this.movements[name] = movement;
     }
   }, {
@@ -1209,21 +1208,25 @@ function (_Movement) {
   }, {
     key: "process",
     value: function process(matrix, stepup) {
-      glmatrix.mat4.translate(matrix, matrix, [this.positions[0], this.positions[1], this.positions[2]]);
+      var quat = glmatrix.quat.create();
+      glmatrix.mat4.getRotation(quat, matrix);
+      var positions = glmatrix.vec3.create(); //const axe = glmatrix.vec3.create();
+
+      glmatrix.vec3.transformQuat(positions, this.positions, quat); //glmatrix.vec3.transformQuat(axe, this.axe, quat);
+
+      glmatrix.mat4.translate(matrix, matrix, [positions[0], positions[1], positions[2]]);
 
       if (this.animate) {
-        glmatrix.mat4.rotate(matrix, matrix, this.angle * _get(_getPrototypeOf(Rotate.prototype), "getPourcent", this).call(this), this.axe);
+        glmatrix.mat4.rotate(matrix, matrix, this.angle * _get(_getPrototypeOf(Rotate.prototype), "getPourcent", this).call(this), this.axe
+        /*axe*/
+        );
       } else {
-        glmatrix.mat4.rotate(matrix, matrix, this.angle, this.axe);
+        glmatrix.mat4.rotate(matrix, matrix, this.angle, this.axe
+        /*axe*/
+        );
       }
 
-      glmatrix.mat4.translate(matrix, matrix, [-this.positions[0], -this.positions[1], -this.positions[2]]);
-
-      if (this.animate) {
-        glmatrix.mat4.rotate(matrix, matrix, -this.angle * _get(_getPrototypeOf(Rotate.prototype), "getPourcent", this).call(this), this.axe);
-      } else {
-        glmatrix.mat4.rotate(matrix, matrix, -this.angle, this.axe);
-      }
+      glmatrix.mat4.translate(matrix, matrix, [-positions[0], -positions[1], -positions[2]]);
 
       if (stepup && this.animate) {
         _get(_getPrototypeOf(Rotate.prototype), "endFrame", this).call(this);
@@ -4464,11 +4467,11 @@ module.exports = function () {
   var rotate11 = new Rotate(360, [1, 0, 0], 3000);
   rotate11.setRepeat(true);
   rotate11.setPowSpeed(1);
-  var rotate111 = new Rotate(360, [1, 0, 0], 3000);
+  var rotate111 = new Rotate(360, [0, 1, 0], 3000);
   rotate111.setRepeat(true);
   rotate111.setPowSpeed(1);
   rotate11.setPosition(0, 0, 1.);
-  rotate111.setPosition(0, 0, 0);
+  rotate111.setPosition(0, 0, 0.);
   var rotate2 = new Rotate(360, [0, 1, 0], 700);
   rotate2.setRepeat(true);
   var rotate22 = new Rotate(360, [0, 1, 1], 1000);
