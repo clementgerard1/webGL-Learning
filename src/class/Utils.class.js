@@ -53,6 +53,10 @@ class Utils{
 		return [ (vec1[0] + vec2[0] + vec3[0]) / 3 , (vec1[1] + vec2[1] + vec3[1]) / 3 , (vec1[2] + vec2[2] + vec3[2]) / 3 ];
 	}
 
+	static fromDegToDotSpace(x){
+		return Math.cos((x / 180) * Math.PI);
+	}
+
 }
 
 module.exports = Utils;

@@ -301,6 +301,43 @@ class ShaderBuilder{
 				"name" : "upl_position_" + name,
 			}
 		}
+		for(let name in this.spotLights){
+			this.fragmentUniforms[name + "_direction"] = true;
+			this.fragmentUniforms[name + "_iLimit"] = true;
+			this.fragmentUniforms[name + "_oLimit"] = true;
+			this.vertexUniforms[name + "_position"] = true;
+			this.fragmentUniforms[name + "_color"] = true;
+			this.pointers[name + "_direction"] = null;
+			this.pointers[name + "_iLimit"] = null;
+			this.pointers[name + "_oLimit"] = null;
+			this.pointers[name + "_color"] = null;
+			this.pointers[name + "_position"] = null;
+			this.infos[name + "_color"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "usl_color_" + name,
+			}
+			this.infos[name + "_position"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "usl_position_" + name,
+			}
+			this.infos[name + "_direction"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "usl_direction_" + name,
+			}
+			this.infos[name + "_iLimit"] = {
+				"nbDatas" : 1,
+				"type" : "uniform mediump float",
+				"name" : "usl_ilimit_" + name,
+			}
+			this.infos[name + "_oLimit"] = {
+				"nbDatas" : 1,
+				"type" : "uniform mediump float",
+				"name" : "usl_olimit_" + name,
+			}
+		}
 
 		this._buildShaders();
 
@@ -341,6 +378,7 @@ class ShaderBuilder{
 				this.pointers[u] = gl.getUniformLocation(shaderProgram, this.infos[u].name);
 			}
 		}
+
 		this.lastShaderProgram = shaderProgram;
 
 	}
@@ -424,14 +462,21 @@ class ShaderBuilder{
 			}
 		`;		
 
-		//Point Light
 		if(this.mode != "normal"){
+			//Point Light
 			for(let n in this.pointLights){
 		  	this.vertexSrc += this.pointLights[n].getVertexShaderPreCode({
 		  		"name" : n
 		  	});
 			}
+			//Spot Light
+			for(let n in this.spotLights){
+		  	this.vertexSrc += this.spotLights[n].getVertexShaderPreCode({
+		  		"name" : n
+		  	});
+			}
 		}
+
 
 
 		this.vertexSrc += "void main() {";
@@ -472,6 +517,13 @@ class ShaderBuilder{
 			  		"name" : n
 			  	});
 				}
+				//Spot Light
+				for(let n in this.spotLights){
+			  	this.vertexSrc += this.spotLights[n].getVertexShaderMainCode({
+			  		"position" : this.infos[n + "_position"],
+			  		"name" : n
+			  	});
+				}
 			}
 
 			//Projection
@@ -503,6 +555,12 @@ class ShaderBuilder{
 			//Point Light
 			for(let n in this.pointLights){
 		  	this.fragmentSrc += this.pointLights[n].getFragmentShaderPreCode({
+		  		"name" : n
+		  	});
+			}
+			//Spot Light
+			for(let n in this.spotLights){
+		  	this.fragmentSrc += this.spotLights[n].getFragmentShaderPreCode({
 		  		"name" : n
 		  	});
 			}
@@ -538,6 +596,17 @@ class ShaderBuilder{
 			  		"normal" : this.infos["normal"],
 			  		"color" : this.infos[n + "_color"],
 			  		"position" : this.infos[n + "_position"],
+			  		"name" : n
+			  	});
+				}
+				for(let n in this.spotLights){
+			  	this.fragmentSrc += this.spotLights[n].getFragmentShaderMainCode({
+			  		"normal" : this.infos["normal"],
+			  		"color" : this.infos[n + "_color"],
+			  		"position" : this.infos[n + "_position"],
+			  		"direction" : this.infos[n + "_direction"],
+			  		"iLimit" : this.infos[n + "_iLimit"],
+			  		"oLimit" : this.infos[n + "_oLimit"],
 			  		"name" : n
 			  	});
 				}

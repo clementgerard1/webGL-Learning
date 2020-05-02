@@ -1028,26 +1028,26 @@ function (_Light) {
   }, {
     key: "getVertexShaderPreCode",
     value: function getVertexShaderPreCode(infos) {
-      var str = 'varying mediump vec3 v' + infos.name + "_pos;";
+      var str = 'varying mediump vec3 v' + infos.name + "_dir;";
       return str;
     }
   }, {
     key: "getVertexShaderMainCode",
     value: function getVertexShaderMainCode(infos) {
       //let str = "highp float " + infos.vector.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), " + infos.vector.name + ");";
-      var str = "v" + infos.name + "_pos = newVec( gl_Position, vec4(" + infos.position.name + ", 1)).xyz;";
+      var str = "v" + infos.name + "_dir = newVec( gl_Position, vec4(" + infos.position.name + ", 1)).xyz;";
       return str;
     }
   }, {
     key: "getFragmentShaderPreCode",
     value: function getFragmentShaderPreCode(infos) {
-      var str = 'varying mediump vec3 v' + infos.name + "_pos;";
+      var str = 'varying mediump vec3 v' + infos.name + "_dir;";
       return str;
     }
   }, {
     key: "getFragmentShaderMainCode",
     value: function getFragmentShaderMainCode(infos) {
-      var str = "highp float " + infos.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_pos));";
+      var str = "highp float " + infos.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_dir));";
       str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb * pow(max(" + infos.name + "power, 0.0), 10.0), gl_FragColor.a);";
       return str;
     }
@@ -1090,6 +1090,8 @@ var Rotate = require("../Movements/Rotate.class.js");
 
 var LookAt = require("../Movements/LookAt.class.js");
 
+var Utils = require("../Utils.class.js");
+
 var SpotLight =
 /*#__PURE__*/
 function (_Light) {
@@ -1105,6 +1107,8 @@ function (_Light) {
     _this.rgb;
     _this.position = [0, 0, 0];
     _this.movements = [];
+    _this.innerLimit = Utils.fromDegToDotSpace(30);
+    _this.outerLimit = Utils.fromDegToDotSpace(50);
     _this.position = [0, 0, 0];
     _this.positionTranslate = new Translate(_this.position, 0, function () {});
 
@@ -1124,6 +1128,17 @@ function (_Light) {
     value: function setPosition(x, y, z) {
       this.position = [x, y, z];
       this.positionTranslate.setTranslationVec(x, y, z);
+    }
+  }, {
+    key: "setLimits",
+    value: function setLimits(inner, outer) {
+      this.innerLimit = Utils.fromDegToDotSpace(inner);
+      this.outerLimit = Utils.fromDegToDotSpace(outer);
+    }
+  }, {
+    key: "setDirection",
+    value: function setDirection(x, y, z) {
+      this.vec = [x, y, z];
     }
   }, {
     key: "addMovement",
@@ -1191,39 +1206,48 @@ function (_Light) {
 
       var position = glmatrix.vec3.create();
       glmatrix.vec3.transformMat4(position, position, processedMatrix);
+      var direction = glmatrix.vec3.create();
+      glmatrix.vec3.transformMat4(direction, this.vec, processedMatrix);
       var rgb = [];
 
       for (var i = 0; i < this.rgb.length; i++) {
         rgb[i] = this.rgb[i] * this.power;
-      }
+      } //Limits
 
+
+      webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_iLimit"), this.innerLimit);
+      webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_oLimit"), this.outerLimit); //Vectors
+
+      webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_direction"), direction);
       webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_position"), position);
       webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_color"), rgb);
     }
   }, {
     key: "getVertexShaderPreCode",
     value: function getVertexShaderPreCode(infos) {
-      var str = 'varying mediump vec3 v' + infos.name + "_pos;";
+      var str = 'varying mediump vec3 v' + infos.name + "_dir;";
       return str;
     }
   }, {
     key: "getVertexShaderMainCode",
     value: function getVertexShaderMainCode(infos) {
-      //let str = "highp float " + infos.vector.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), " + infos.vector.name + ");";
-      var str = "v" + infos.name + "_pos = newVec( gl_Position, vec4(" + infos.position.name + ", 1)).xyz;";
+      var str = "v" + infos.name + "_dir = newVec( gl_Position, vec4(" + infos.position.name + ", 1)).xyz;";
       return str;
     }
   }, {
     key: "getFragmentShaderPreCode",
     value: function getFragmentShaderPreCode(infos) {
-      var str = 'varying mediump vec3 v' + infos.name + "_pos;";
+      var str = 'varying mediump vec3 v' + infos.name + "_dir;";
       return str;
     }
   }, {
     key: "getFragmentShaderMainCode",
     value: function getFragmentShaderMainCode(infos) {
-      var str = "highp float " + infos.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_pos));";
-      str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb * pow(max(" + infos.name + "power, 0.0), 10.0), gl_FragColor.a);";
+      var str = "highp float " + infos.name + "var = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_dir));";
+      str += "if(" + infos.name + "var > " + infos.iLimit.name + "){ " + infos.name + "var = 1.0;}else ";
+      str += "if(" + infos.name + "var < " + infos.oLimit.name + "){ " + infos.name + "var = 0.0;}else ";
+      str += "{" + infos.name + "var =(" + infos.name + "var - " + infos.oLimit.name + ") / (" + infos.iLimit.name + "-" + infos.oLimit.name + ");}";
+      str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb *  pow(max(" + infos.name + "var, 0.0), 10.0), gl_FragColor.a);";
       return str;
     }
   }]);
@@ -1232,7 +1256,7 @@ function (_Light) {
 }(Light);
 
 module.exports = SpotLight;
-},{"../../../node_modules/gl-matrix/gl-matrix-min.js":34,"../Interfaces/Light.class.js":2,"../Movements/LookAt.class.js":11,"../Movements/Rotate.class.js":12,"../Movements/Scale.class.js":13,"../Movements/Translate.class.js":14}],11:[function(require,module,exports){
+},{"../../../node_modules/gl-matrix/gl-matrix-min.js":34,"../Interfaces/Light.class.js":2,"../Movements/LookAt.class.js":11,"../Movements/Rotate.class.js":12,"../Movements/Scale.class.js":13,"../Movements/Translate.class.js":14,"../Utils.class.js":25}],11:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -3110,6 +3134,44 @@ function () {
         };
       }
 
+      for (var _name3 in this.spotLights) {
+        this.fragmentUniforms[_name3 + "_direction"] = true;
+        this.fragmentUniforms[_name3 + "_iLimit"] = true;
+        this.fragmentUniforms[_name3 + "_oLimit"] = true;
+        this.vertexUniforms[_name3 + "_position"] = true;
+        this.fragmentUniforms[_name3 + "_color"] = true;
+        this.pointers[_name3 + "_direction"] = null;
+        this.pointers[_name3 + "_iLimit"] = null;
+        this.pointers[_name3 + "_oLimit"] = null;
+        this.pointers[_name3 + "_color"] = null;
+        this.pointers[_name3 + "_position"] = null;
+        this.infos[_name3 + "_color"] = {
+          "nbDatas": 3,
+          "type": "uniform mediump vec3",
+          "name": "usl_color_" + _name3
+        };
+        this.infos[_name3 + "_position"] = {
+          "nbDatas": 3,
+          "type": "uniform mediump vec3",
+          "name": "usl_position_" + _name3
+        };
+        this.infos[_name3 + "_direction"] = {
+          "nbDatas": 3,
+          "type": "uniform mediump vec3",
+          "name": "usl_direction_" + _name3
+        };
+        this.infos[_name3 + "_iLimit"] = {
+          "nbDatas": 1,
+          "type": "uniform mediump float",
+          "name": "usl_ilimit_" + _name3
+        };
+        this.infos[_name3 + "_oLimit"] = {
+          "nbDatas": 1,
+          "type": "uniform mediump float",
+          "name": "usl_olimit_" + _name3
+        };
+      }
+
       this._buildShaders();
 
       var vShader = this._createShader(gl.VERTEX_SHADER, this.vertexSrc, gl);
@@ -3211,12 +3273,20 @@ function () {
 
       this.vertexSrc += "\n\t\t\tvec4 scale(vec4 v, float scal){\n\t\t\t\treturn vec4( v.x * scal, v.y * scal, v.z * scal, 1);\n\t\t\t}\n\t\t"; //Translate 
 
-      this.vertexSrc += "\n\t\t\tvec4 translate(vec4 v, vec4 transVec){\n\t\t\t\treturn (mat4(\n\t\t\t\t\t\t1.0, 0.0, 0.0, 0.0, \n\t\t\t\t\t  0.0, 1.0, 0.0, 0.0, \n\t\t\t\t\t  0.0, 0.0, 1.0, 0.0,  \n\t\t\t\t\t  transVec.x, transVec.y, transVec.z, transVec.w) * v);\n\t\t\t}\n\t\t"; //Point Light
+      this.vertexSrc += "\n\t\t\tvec4 translate(vec4 v, vec4 transVec){\n\t\t\t\treturn (mat4(\n\t\t\t\t\t\t1.0, 0.0, 0.0, 0.0, \n\t\t\t\t\t  0.0, 1.0, 0.0, 0.0, \n\t\t\t\t\t  0.0, 0.0, 1.0, 0.0,  \n\t\t\t\t\t  transVec.x, transVec.y, transVec.z, transVec.w) * v);\n\t\t\t}\n\t\t";
 
       if (this.mode != "normal") {
+        //Point Light
         for (var n in this.pointLights) {
           this.vertexSrc += this.pointLights[n].getVertexShaderPreCode({
             "name": n
+          });
+        } //Spot Light
+
+
+        for (var _n4 in this.spotLights) {
+          this.vertexSrc += this.spotLights[_n4].getVertexShaderPreCode({
+            "name": _n4
           });
         }
       }
@@ -3251,10 +3321,18 @@ function () {
 
       if (this.mode != "normal") {
         //Point Light
-        for (var _n4 in this.pointLights) {
-          this.vertexSrc += this.pointLights[_n4].getVertexShaderMainCode({
-            "position": this.infos[_n4 + "_position"],
-            "name": _n4
+        for (var _n5 in this.pointLights) {
+          this.vertexSrc += this.pointLights[_n5].getVertexShaderMainCode({
+            "position": this.infos[_n5 + "_position"],
+            "name": _n5
+          });
+        } //Spot Light
+
+
+        for (var _n6 in this.spotLights) {
+          this.vertexSrc += this.spotLights[_n6].getVertexShaderMainCode({
+            "position": this.infos[_n6 + "_position"],
+            "name": _n6
           });
         }
       } //Projection
@@ -3290,6 +3368,13 @@ function () {
           this.fragmentSrc += this.pointLights[n].getFragmentShaderPreCode({
             "name": n
           });
+        } //Spot Light
+
+
+        for (var _n7 in this.spotLights) {
+          this.fragmentSrc += this.spotLights[_n7].getFragmentShaderPreCode({
+            "name": _n7
+          });
         }
       }
 
@@ -3305,27 +3390,39 @@ function () {
 
       if (this.mode != "normal") {
         //LIGHTS
-        for (var _n5 in this.ambientLights) {
-          this.fragmentSrc += this.ambientLights[_n5].getFragmentShaderMainCode({
-            "name": this.infos[_n5].name
+        for (var _n8 in this.ambientLights) {
+          this.fragmentSrc += this.ambientLights[_n8].getFragmentShaderMainCode({
+            "name": this.infos[_n8].name
           });
         }
 
-        for (var _n6 in this.directionalLights) {
-          this.fragmentSrc += this.directionalLights[_n6].getFragmentShaderMainCode({
+        for (var _n9 in this.directionalLights) {
+          this.fragmentSrc += this.directionalLights[_n9].getFragmentShaderMainCode({
             "normal": this.infos["normal"],
-            "color": this.infos[_n6 + "_color"],
-            "vector": this.infos[_n6 + "_vector"],
-            "name": _n6
+            "color": this.infos[_n9 + "_color"],
+            "vector": this.infos[_n9 + "_vector"],
+            "name": _n9
           });
         }
 
-        for (var _n7 in this.pointLights) {
-          this.fragmentSrc += this.pointLights[_n7].getFragmentShaderMainCode({
+        for (var _n10 in this.pointLights) {
+          this.fragmentSrc += this.pointLights[_n10].getFragmentShaderMainCode({
             "normal": this.infos["normal"],
-            "color": this.infos[_n7 + "_color"],
-            "position": this.infos[_n7 + "_position"],
-            "name": _n7
+            "color": this.infos[_n10 + "_color"],
+            "position": this.infos[_n10 + "_position"],
+            "name": _n10
+          });
+        }
+
+        for (var _n11 in this.spotLights) {
+          this.fragmentSrc += this.spotLights[_n11].getFragmentShaderMainCode({
+            "normal": this.infos["normal"],
+            "color": this.infos[_n11 + "_color"],
+            "position": this.infos[_n11 + "_position"],
+            "direction": this.infos[_n11 + "_direction"],
+            "iLimit": this.infos[_n11 + "_iLimit"],
+            "oLimit": this.infos[_n11 + "_oLimit"],
+            "name": _n11
           });
         }
       } else {
@@ -3727,6 +3824,11 @@ function () {
     key: "getCentroid",
     value: function getCentroid(vec1, vec2, vec3) {
       return [(vec1[0] + vec2[0] + vec3[0]) / 3, (vec1[1] + vec2[1] + vec3[1]) / 3, (vec1[2] + vec2[2] + vec3[2]) / 3];
+    }
+  }, {
+    key: "fromDegToDotSpace",
+    value: function fromDegToDotSpace(x) {
+      return Math.cos(x / 180 * Math.PI);
     }
   }]);
 
@@ -4507,6 +4609,8 @@ var DirectionalLight = require("../class/Lights/DirectionalLight.class.js");
 
 var PointLight = require("../class/Lights/PointLight.class.js");
 
+var SpotLight = require("../class/Lights/SpotLight.class.js");
+
 var Scene = require("../class/Scene.class.js");
 
 var Rotate = require("../class/Movements/Rotate.class.js");
@@ -4579,8 +4683,14 @@ module.exports = function () {
   point.setPower(1);
   point.setRGB(1, 1, 1);
   point.setPosition(0, 0, 1);
-  scene.addLight("ambient", ambient);
-  scene.addLight("point", point);
+  var spot = new SpotLight();
+  spot.setPower(1);
+  spot.setRGB(1, 0, 0);
+  spot.setPosition(7, 0, 2);
+  spot.setDirection(-1, 0, -1);
+  scene.addLight("ambient", ambient); //scene.addLight("point", point);
+
+  scene.addLight("spot", spot);
   var rotateP = new Rotate(360, [1, 0, 0], 1200, function () {
     rotateP.reset();
   });
@@ -4597,7 +4707,7 @@ module.exports = function () {
   program.start();
   window.addEventListener('DOMContentLoaded', function (event) {});
 };
-},{"../class/Camera.class.js":1,"../class/Lights/AmbientLight.class.js":7,"../class/Lights/DirectionalLight.class.js":8,"../class/Lights/PointLight.class.js":9,"../class/Movements/LookAt.class.js":11,"../class/Movements/Rotate.class.js":12,"../class/Objects3D/Cube.class.js":15,"../class/Objects3D/Object3DGroup.class.js":16,"../class/Renderer.class.js":18,"../class/Scene.class.js":19,"../class/WebGLProgram.class.js":26}],33:[function(require,module,exports){
+},{"../class/Camera.class.js":1,"../class/Lights/AmbientLight.class.js":7,"../class/Lights/DirectionalLight.class.js":8,"../class/Lights/PointLight.class.js":9,"../class/Lights/SpotLight.class.js":10,"../class/Movements/LookAt.class.js":11,"../class/Movements/Rotate.class.js":12,"../class/Objects3D/Cube.class.js":15,"../class/Objects3D/Object3DGroup.class.js":16,"../class/Renderer.class.js":18,"../class/Scene.class.js":19,"../class/WebGLProgram.class.js":26}],33:[function(require,module,exports){
 "use strict";
 
 var WebGLProgram = require("../class/WebGLProgram.class.js");

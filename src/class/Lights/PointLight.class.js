@@ -98,23 +98,23 @@ class PointLight extends Light{
 	}
 
 	getVertexShaderPreCode(infos){
-		let str = 'varying mediump vec3 v' + infos.name + "_pos;";
+		let str = 'varying mediump vec3 v' + infos.name + "_dir;";
 		return str;
 	}
 
 	getVertexShaderMainCode(infos){
 		//let str = "highp float " + infos.vector.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), " + infos.vector.name + ");";
-		let str = "v" + infos.name + "_pos = newVec( gl_Position, vec4(" + infos.position.name + ", 1)).xyz;"
+		let str = "v" + infos.name + "_dir = newVec( gl_Position, vec4(" + infos.position.name + ", 1)).xyz;"
 		return str;
 	}
 
 	getFragmentShaderPreCode(infos){
-		let str = 'varying mediump vec3 v' + infos.name + "_pos;";
+		let str = 'varying mediump vec3 v' + infos.name + "_dir;";
 		return str;
 	}
 
 	getFragmentShaderMainCode(infos){
-		let str = "highp float " + infos.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_pos));";
+		let str = "highp float " + infos.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_dir));";
 		str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb * pow(max(" + infos.name + "power, 0.0), 10.0), gl_FragColor.a);";
 		return str;
 	}

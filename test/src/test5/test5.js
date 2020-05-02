@@ -4,6 +4,7 @@ const Cube = require("../class/Objects3D/Cube.class.js");
 const AmbientLight = require("../class/Lights/AmbientLight.class.js");
 const DirectionalLight = require("../class/Lights/DirectionalLight.class.js");
 const PointLight = require("../class/Lights/PointLight.class.js");
+const SpotLight = require("../class/Lights/SpotLight.class.js");
 const Scene = require("../class/Scene.class.js");
 const Rotate = require("../class/Movements/Rotate.class.js");
 const LookAt = require("../class/Movements/LookAt.class.js");
@@ -63,8 +64,16 @@ module.exports = function(){
 	point.setRGB(1, 1, 1);
 	point.setPosition(0,0,1);
 
+	const spot = new SpotLight();
+	spot.setPower(1);
+	spot.setRGB(1, 0, 0);
+	spot.setPosition(7, 0, 2);
+	spot.setDirection(-1, 0, -1);
+
 	scene.addLight("ambient", ambient);
-	scene.addLight("point", point);
+	//scene.addLight("point", point);
+	scene.addLight("spot", spot);
+
 	const rotateP = new Rotate(360, [1, 0, 0], 1200, function(){
 		rotateP.reset();
 	});

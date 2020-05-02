@@ -6,6 +6,8 @@ const Scale = require("../Movements/Scale.class.js");
 const Rotate = require("../Movements/Rotate.class.js");
 const LookAt = require("../Movements/LookAt.class.js");
 
+const Utils = require("../Utils.class.js");
+
 class SpotLight extends Light{
 
 	constructor(){
@@ -14,6 +16,8 @@ class SpotLight extends Light{
 		this.rgb;
 		this.position = [0, 0, 0];
 		this.movements = [];
+		this.innerLimit = Utils.fromDegToDotSpace(30);
+		this.outerLimit = Utils.fromDegToDotSpace(50);
 
 		this.position = [0, 0, 0];
     this.positionTranslate = new Translate(this.position, 0, function(){});
@@ -28,7 +32,14 @@ class SpotLight extends Light{
 		this.positionTranslate.setTranslationVec(x, y, z);
 	}
 
+	setLimits(inner, outer){
+		this.innerLimit = Utils.fromDegToDotSpace(inner);
+		this.outerLimit = Utils.fromDegToDotSpace(outer);
+	}
 
+	setDirection(x, y, z){
+		this.vec = [x, y, z];
+	}
 
 	addMovement(name, movement){
       this.movements[name] = movement;
@@ -54,7 +65,6 @@ class SpotLight extends Light{
 	}
 
 	render(webGLProgram, name){
-
 		//Local transformation
 
     let processedMatrix = glmatrix.mat4.create();
@@ -88,34 +98,46 @@ class SpotLight extends Light{
     const position = glmatrix.vec3.create();
     glmatrix.vec3.transformMat4(position, position, processedMatrix);
 
+    const direction = glmatrix.vec3.create();
+    glmatrix.vec3.transformMat4(direction, this.vec, processedMatrix);
+
 
 		const rgb = [];
 		for(let i = 0 ; i < this.rgb.length ; i++){
 			rgb[i] = this.rgb[i] * this.power;
 		}
+
+		//Limits
+		webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_iLimit"), this.innerLimit);
+		webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_oLimit"), this.outerLimit);
+
+		//Vectors
+		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_direction"), direction);
 		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_position"), position);
 		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_color"), rgb);
 	}
 
 	getVertexShaderPreCode(infos){
-		let str = 'varying mediump vec3 v' + infos.name + "_pos;";
+		let str = 'varying mediump vec3 v' + infos.name + "_dir;";
 		return str;
 	}
 
 	getVertexShaderMainCode(infos){
-		//let str = "highp float " + infos.vector.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), " + infos.vector.name + ");";
-		let str = "v" + infos.name + "_pos = newVec( gl_Position, vec4(" + infos.position.name + ", 1)).xyz;"
+		let str = "v" + infos.name + "_dir = newVec( gl_Position, vec4(" + infos.position.name + ", 1)).xyz;"
 		return str;
 	}
 
 	getFragmentShaderPreCode(infos){
-		let str = 'varying mediump vec3 v' + infos.name + "_pos;";
+		let str = 'varying mediump vec3 v' + infos.name + "_dir;";
 		return str;
 	}
 
 	getFragmentShaderMainCode(infos){
-		let str = "highp float " + infos.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_pos));";
-		str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb * pow(max(" + infos.name + "power, 0.0), 10.0), gl_FragColor.a);";
+		let str = "highp float " + infos.name + "var = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_dir));";
+		str += "if(" + infos.name + "var > " + infos.iLimit.name + "){ " + infos.name + "var = 1.0;}else ";
+		str += "if(" + infos.name + "var < " + infos.oLimit.name + "){ " + infos.name + "var = 0.0;}else "; 
+		str += "{" + infos.name + "var =(" + infos.name + "var - " + infos.oLimit.name + ") / (" + infos.iLimit.name + "-" + infos.oLimit.name + ");}"; 
+		str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb *  pow(max(" + infos.name + "var, 0.0), 10.0), gl_FragColor.a);";
 		return str;
 	}
 
