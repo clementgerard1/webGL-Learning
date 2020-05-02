@@ -1059,7 +1059,180 @@ function (_Light) {
 module.exports = PointLight;
 },{"../../../node_modules/gl-matrix/gl-matrix-min.js":34,"../Interfaces/Light.class.js":2,"../Movements/LookAt.class.js":11,"../Movements/Rotate.class.js":12,"../Movements/Scale.class.js":13,"../Movements/Translate.class.js":14}],10:[function(require,module,exports){
 "use strict";
-},{}],11:[function(require,module,exports){
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+var Light = require("../Interfaces/Light.class.js");
+
+var glmatrix = require("../../../node_modules/gl-matrix/gl-matrix-min.js");
+
+var Translate = require("../Movements/Translate.class.js");
+
+var Scale = require("../Movements/Scale.class.js");
+
+var Rotate = require("../Movements/Rotate.class.js");
+
+var LookAt = require("../Movements/LookAt.class.js");
+
+var SpotLight =
+/*#__PURE__*/
+function (_Light) {
+  _inherits(SpotLight, _Light);
+
+  function SpotLight() {
+    var _this;
+
+    _classCallCheck(this, SpotLight);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(SpotLight).call(this));
+    _this.power = 1.;
+    _this.rgb;
+    _this.position = [0, 0, 0];
+    _this.movements = [];
+    _this.position = [0, 0, 0];
+    _this.positionTranslate = new Translate(_this.position, 0, function () {});
+
+    _this.positionTranslate.setPosition(0, 0, 0);
+
+    _this.positionTranslate.setTranslationVec(0, 0, 0);
+
+    _this.addMovement("position", _this.positionTranslate);
+
+    _this.positionTranslate.start();
+
+    return _this;
+  }
+
+  _createClass(SpotLight, [{
+    key: "setPosition",
+    value: function setPosition(x, y, z) {
+      this.position = [x, y, z];
+      this.positionTranslate.setTranslationVec(x, y, z);
+    }
+  }, {
+    key: "addMovement",
+    value: function addMovement(name, movement) {
+      this.movements[name] = movement;
+    }
+  }, {
+    key: "removeMovement",
+    value: function removeMovement(name) {
+      delete this.movements[name];
+    }
+  }, {
+    key: "setPower",
+    value: function setPower(f) {
+      this.power = f;
+    }
+  }, {
+    key: "setRGB",
+    value: function setRGB(r, g, b) {
+      this.rgb = [r, g, b];
+    }
+  }, {
+    key: "getRGB",
+    value: function getRGB() {
+      return this.rgb;
+    }
+  }, {
+    key: "getPower",
+    value: function getPower() {
+      return this.power;
+    }
+  }, {
+    key: "render",
+    value: function render(webGLProgram, name) {
+      //Local transformation
+      var processedMatrix = glmatrix.mat4.create();
+      var stepUp = true; //Translate
+
+      for (var move in this.movements) {
+        if (this.movements[move] instanceof Translate) {
+          this.movements[move].process(processedMatrix, stepUp);
+        }
+      } //Rotate
+
+
+      for (var _move in this.movements) {
+        if (this.movements[_move] instanceof Rotate) {
+          this.movements[_move].process(processedMatrix, stepUp);
+        }
+      } //LookAt
+
+
+      for (var _move2 in this.movements) {
+        if (this.movements[_move2] instanceof LookAt) {
+          this.movements[_move2].process(processedMatrix, this);
+        }
+      } //Scale
+
+
+      for (var _move3 in this.movements) {
+        if (this.movements[_move3] instanceof Scale) {
+          this.movements[_move3].process(processedMatrix, stepUp);
+        }
+      }
+
+      var position = glmatrix.vec3.create();
+      glmatrix.vec3.transformMat4(position, position, processedMatrix);
+      var rgb = [];
+
+      for (var i = 0; i < this.rgb.length; i++) {
+        rgb[i] = this.rgb[i] * this.power;
+      }
+
+      webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_position"), position);
+      webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_color"), rgb);
+    }
+  }, {
+    key: "getVertexShaderPreCode",
+    value: function getVertexShaderPreCode(infos) {
+      var str = 'varying mediump vec3 v' + infos.name + "_pos;";
+      return str;
+    }
+  }, {
+    key: "getVertexShaderMainCode",
+    value: function getVertexShaderMainCode(infos) {
+      //let str = "highp float " + infos.vector.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), " + infos.vector.name + ");";
+      var str = "v" + infos.name + "_pos = newVec( gl_Position, vec4(" + infos.position.name + ", 1)).xyz;";
+      return str;
+    }
+  }, {
+    key: "getFragmentShaderPreCode",
+    value: function getFragmentShaderPreCode(infos) {
+      var str = 'varying mediump vec3 v' + infos.name + "_pos;";
+      return str;
+    }
+  }, {
+    key: "getFragmentShaderMainCode",
+    value: function getFragmentShaderMainCode(infos) {
+      var str = "highp float " + infos.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_pos));";
+      str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb * pow(max(" + infos.name + "power, 0.0), 10.0), gl_FragColor.a);";
+      return str;
+    }
+  }]);
+
+  return SpotLight;
+}(Light);
+
+module.exports = SpotLight;
+},{"../../../node_modules/gl-matrix/gl-matrix-min.js":34,"../Interfaces/Light.class.js":2,"../Movements/LookAt.class.js":11,"../Movements/Rotate.class.js":12,"../Movements/Scale.class.js":13,"../Movements/Translate.class.js":14}],11:[function(require,module,exports){
 "use strict";
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
@@ -1208,13 +1381,14 @@ function (_Movement) {
   }, {
     key: "process",
     value: function process(matrix, stepup) {
-      var quat = glmatrix.quat.create();
-      glmatrix.mat4.getRotation(quat, matrix);
-      var positions = glmatrix.vec3.create(); //const axe = glmatrix.vec3.create();
+      //glmatrix.vec3.transformQuat(axe, this.axe, quat);
+      //const quat = glmatrix.quat.create();
+      //glmatrix.mat4.getRotation(quat, matrix);
+      //glmatrix.quat.invert(quat, quat);
+      var positions = this.positions; //glmatrix.vec3.create();
+      //const axe = glmatrix.vec3.create();
 
-      glmatrix.vec3.transformQuat(positions, this.positions, quat); //glmatrix.vec3.transformQuat(axe, this.axe, quat);
-
-      glmatrix.mat4.translate(matrix, matrix, [positions[0], positions[1], positions[2]]);
+      glmatrix.mat4.translate(matrix, matrix, [this.positions[0], this.positions[1], this.positions[2]]);
 
       if (this.animate) {
         glmatrix.mat4.rotate(matrix, matrix, this.angle * _get(_getPrototypeOf(Rotate.prototype), "getPourcent", this).call(this), this.axe
@@ -1224,9 +1398,10 @@ function (_Movement) {
         glmatrix.mat4.rotate(matrix, matrix, this.angle, this.axe
         /*axe*/
         );
-      }
+      } //glmatrix.vec3.transformQuat(positions, this.positions, quat);
 
-      glmatrix.mat4.translate(matrix, matrix, [-positions[0], -positions[1], -positions[2]]);
+
+      glmatrix.mat4.translate(matrix, matrix, [-this.positions[0], -this.positions[1], -this.positions[2]]);
 
       if (stepup && this.animate) {
         _get(_getPrototypeOf(Rotate.prototype), "endFrame", this).call(this);
@@ -1325,8 +1500,11 @@ function (_Movement) {
 
       if (this.animate) {
         var vec = glmatrix.vec3.create();
-        glmatrix.vec3.scale(vec, this.vec, _get(_getPrototypeOf(Scale.prototype), "getPourcent", this).call(this));
-        glmatrix.mat4.translate(matrix, matrix, vec);
+
+        var pourcent = _get(_getPrototypeOf(Scale.prototype), "getPourcent", this).call(this);
+
+        glmatrix.vec3.scale(vec, this.vec, pourcent);
+        glmatrix.mat4.scale(matrix, matrix, vec);
       } else {
         glmatrix.mat4.scale(matrix, matrix, this.vec);
       }
@@ -1416,7 +1594,10 @@ function (_Movement) {
 
       if (this.animate) {
         var vec = glmatrix.vec3.create();
-        glmatrix.vec3.scale(vec, this.vec, _get(_getPrototypeOf(Translate.prototype), "getPourcent", this).call(this));
+
+        var pourcent = _get(_getPrototypeOf(Translate.prototype), "getPourcent", this).call(this);
+
+        glmatrix.vec3.scale(vec, this.vec, [pourcent, pourcent, pourcent]);
         glmatrix.mat4.translate(matrix, matrix, vec);
       } else {
         glmatrix.mat4.translate(matrix, matrix, this.vec);
@@ -1860,7 +2041,7 @@ function (_Object3D) {
 
     _this.width = 1;
     _this.height = 1;
-    _this.sizeScale = new Scale([_this.width, _this.height, 1], 1, function () {});
+    _this.sizeScale = new Scale([_this.width, _this.height, 1], 0, function () {});
 
     _this.sizeScale.setPosition(0, 0, 0);
 
@@ -2554,6 +2735,9 @@ function () {
     key: "render",
     value: function render(webGLProgram) {
       for (var i = 0; i < this.renderers.length; i++) {
+        if (i > 0) {//Add stepUp = false
+        }
+
         this.renderers[i].render(webGLProgram);
       }
     }
@@ -4054,8 +4238,8 @@ module.exports = function () {
   var texture3 = program.createMirrorTexture();
   plan.addTexture("color", texture2);
   plan.addTexture("mirror", texture3);
-  var rotate = new Rotate(45, [0, 1, 0], 1, function () {});
-  var rotatee = new Rotate(-65, [1, 0, 0], 1, function () {});
+  var rotate = new Rotate(45, [0, 1, 0], 0, function () {});
+  var rotatee = new Rotate(-65, [1, 0, 0], 0, function () {});
   rotate.setPosition(0, 0, 0);
   plan.addMovement("rotate", rotate);
   plan.addMovement("rotate2", rotatee);
@@ -4461,22 +4645,23 @@ module.exports = function () {
   scene.add3DObject("cube3", cube3);
   var texture3 = program.createColorTexture(1, 0, 0, 1);
   cube3.addTexture("color", texture3);
-  var rotate1 = new Rotate(360, [1, 0, 0], 10);
+  var rotate1 = new Rotate(360, [0, 1, 0], 3000);
   rotate1.setRepeat(true); //rotate1.setPowSpeed(0.7);
 
   var rotate11 = new Rotate(360, [1, 0, 0], 3000);
   rotate11.setRepeat(true);
   rotate11.setPowSpeed(1);
-  var rotate111 = new Rotate(360, [0, 1, 0], 3000);
+  var rotate111 = new Rotate(360, [1, 0, 0], 3000);
   rotate111.setRepeat(true);
   rotate111.setPowSpeed(1);
-  rotate11.setPosition(0, 0, 1.);
-  rotate111.setPosition(0, 0, 0.);
-  var rotate2 = new Rotate(360, [0, 1, 0], 700);
+  rotate1.setPosition(0, 0, 0.);
+  rotate11.setPosition(0, 0, 0);
+  rotate111.setPosition(0, 0, 0.5);
+  var rotate2 = new Rotate(360, [0, 1, 0], 7000);
   rotate2.setRepeat(true);
   var rotate22 = new Rotate(360, [0, 1, 1], 1000);
   rotate22.setRepeat(true);
-  var rotate3 = new Rotate(360, [0, 1, 0], 800);
+  var rotate3 = new Rotate(360, [0, 1, 0], 8000);
   rotate3.setRepeat(true);
   var rotate33 = new Rotate(360, [1, 1, 0], 1000);
   rotate33.setRepeat(true);
@@ -4491,13 +4676,13 @@ module.exports = function () {
   rotate3.start();
   rotate33.start();
   rotate333.start();
+  cube1.addMovement(rotate111);
   cube1.addMovement(rotate1);
   cube1.addMovement(rotate11);
-  cube1.addMovement(rotate111);
-  cube2.addMovement(rotate2);
-  cube2.addMovement(rotate22);
-  cube3.addMovement(rotate3);
-  cube3.addMovement(rotate33);
+  cube2.addMovement(rotate2); //cube2.addMovement(rotate22);
+  //cube3.addMovement(rotate3);
+  //cube3.addMovement(rotate33);
+
   cube3.addMovement(rotate333);
   scene.setClearColor(0, 0, 0, 1);
   program.setScene(scene); //Carré invisible en haut à droite

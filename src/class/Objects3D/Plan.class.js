@@ -36,7 +36,7 @@ class Plan extends Object3D {
         //Scale
         this.width = 1;
         this.height = 1;
-        this.sizeScale = new Scale([this.width,this.height,1], 1, function(){});
+        this.sizeScale = new Scale([this.width,this.height,1], 0, function(){});
         this.sizeScale.setPosition(0, 0, 0);
         this.addMovement("size", this.sizeScale);
         this.sizeScale.start();

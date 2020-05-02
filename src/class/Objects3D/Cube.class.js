@@ -254,6 +254,7 @@ class Cube extends Object3D {
             //Draw
             webGLProgram.getContext().drawElements(webGLProgram.getContext().LINES, indexes.length, webGLProgram.getContext().UNSIGNED_SHORT, 0);
         }else if(webGLProgram.getShaderBuilder().getMode() == "normal"){
+
             webGLProgram.getContext().uniform4fv(webGLProgram.getShaderBuilder().getPointer("normalColor"), webGLProgram.getShaderBuilder().getNormalColor());
             webGLProgram.getContext().drawArrays(webGLProgram.getContext().LINES, 0, (this.normals.length * 2) / 3);
         }else{

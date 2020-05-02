@@ -194,6 +194,9 @@ class Scene{
 
 	render(webGLProgram){
 		for(let i = 0 ; i < this.renderers.length ; i++){
+			if(i > 0){
+				//Add stepUp = false
+			}
 			this.renderers[i].render(webGLProgram);
 		}
 

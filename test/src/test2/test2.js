@@ -38,10 +38,10 @@ module.exports = function(){
 	const texture3 = program.createMirrorTexture();
 	plan.addTexture("color", texture2);
 	plan.addTexture("mirror", texture3);
-	const rotate =  new Rotate(45, [0, 1, 0], 1, function(){
+	const rotate =  new Rotate(45, [0, 1, 0], 0, function(){
 
 	});
-	const rotatee =  new Rotate(-65, [1, 0, 0], 1, function(){
+	const rotatee =  new Rotate(-65, [1, 0, 0], 0, function(){
 
 	});
 	rotate.setPosition(0, 0, 0);

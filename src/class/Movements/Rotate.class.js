@@ -30,14 +30,15 @@ class Rotate extends Movement{
 
 	process(matrix, stepup){
 
-		const quat = glmatrix.quat.create();
-		glmatrix.mat4.getRotation(quat, matrix);
-		const positions = glmatrix.vec3.create();
-		//const axe = glmatrix.vec3.create();
-		glmatrix.vec3.transformQuat(positions, this.positions, quat);
 		//glmatrix.vec3.transformQuat(axe, this.axe, quat);
 
-		glmatrix.mat4.translate(matrix, matrix, [positions[0], positions[1], positions[2]]);
+		//const quat = glmatrix.quat.create();
+		//glmatrix.mat4.getRotation(quat, matrix);
+		//glmatrix.quat.invert(quat, quat);
+		const positions = this.positions;//glmatrix.vec3.create();
+		//const axe = glmatrix.vec3.create();
+
+		glmatrix.mat4.translate(matrix, matrix, [this.positions[0], this.positions[1], this.positions[2]]);
 		
 		if(this.animate){
 			glmatrix.mat4.rotate(matrix, matrix, this.angle * super.getPourcent(), this.axe/*axe*/);
@@ -45,7 +46,10 @@ class Rotate extends Movement{
 			glmatrix.mat4.rotate(matrix, matrix, this.angle, this.axe/*axe*/);
 		}
 
-		glmatrix.mat4.translate(matrix, matrix, [-positions[0], -positions[1], -positions[2]]);
+		//glmatrix.vec3.transformQuat(positions, this.positions, quat);
+
+
+		glmatrix.mat4.translate(matrix, matrix, [-this.positions[0], -this.positions[1], -this.positions[2]]);
 
 		
 		if(stepup && this.animate){

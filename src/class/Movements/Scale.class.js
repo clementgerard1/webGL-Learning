@@ -33,8 +33,9 @@ class Scale extends Movement{
 		glmatrix.mat4.translate(matrix, matrix, [this.positions[0], this.positions[1], this.positions[2]]);
 		if(this.animate){
 			const vec = glmatrix.vec3.create();
-			glmatrix.vec3.scale(vec, this.vec, super.getPourcent());
-			glmatrix.mat4.translate(matrix, matrix, vec);
+			const pourcent = super.getPourcent();
+			glmatrix.vec3.scale(vec, this.vec, pourcent);
+			glmatrix.mat4.scale(matrix, matrix, vec);
 		}else{
 			glmatrix.mat4.scale(matrix, matrix, this.vec);
 		}
