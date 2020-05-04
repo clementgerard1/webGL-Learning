@@ -115,7 +115,7 @@ class Renderer{
 	renderTextures(webGLProgram){
 		const sceneObjects = this.scene.getAllObjects();
 		for(let obj in sceneObjects){
-			this.scene.objects[obj].renderTextures();
+			sceneObjects[obj].renderTextures();
 		}
 	}
 

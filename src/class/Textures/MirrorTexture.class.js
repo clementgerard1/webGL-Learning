@@ -57,6 +57,8 @@ class MirrorTexture extends Texture{
 		renderer.disableObjectStepUpAnimation();
 		renderer.disableLightStepUpAnimation();
 		renderer.disableCameraStepUpAnimation();
+		renderer.disableClearColorBuffer();
+		renderer.disableClearDepthBuffer();
 		newScene.setRenderer(renderer, 0);
 		newScene.incMirrorValue();
 		renderer.render(this.webGLProgram);

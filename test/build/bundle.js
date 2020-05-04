@@ -2487,7 +2487,7 @@ function () {
       var sceneObjects = this.scene.getAllObjects();
 
       for (var obj in sceneObjects) {
-        this.scene.objects[obj].renderTextures();
+        sceneObjects[obj].renderTextures();
       }
     }
   }, {
@@ -4294,6 +4294,8 @@ function (_Texture) {
       renderer.disableObjectStepUpAnimation();
       renderer.disableLightStepUpAnimation();
       renderer.disableCameraStepUpAnimation();
+      renderer.disableClearColorBuffer();
+      renderer.disableClearDepthBuffer();
       newScene.setRenderer(renderer, 0);
       newScene.incMirrorValue();
       renderer.render(this.webGLProgram);
