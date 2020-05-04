@@ -3,9 +3,11 @@ const glmatrix = require("../../node_modules/gl-matrix/gl-matrix-min.js");
 class Utils{
 
 	static nextID=-1;
+	static objects = [];
 
-	static newID(){
+	static newID(obj){
 		this.nextID = this.nextID + 1;
+		this.objects[this.nextID] = obj;
 		return this.nextID;
 	}
 
@@ -55,6 +57,21 @@ class Utils{
 
 	static fromDegToDotSpace(x){
 		return Math.cos((x / 180) * Math.PI);
+	}
+
+	static idAsColor(id){
+		return [((id >>  0) & 0xFF) / 0xFF,
+          ((id >>  8) & 0xFF) / 0xFF,
+          ((id >> 16) & 0xFF) / 0xFF,
+          ((id >> 24) & 0xFF) / 0xFF];
+	}
+
+	static colorAsID(vec4){
+		return vec4[0] + (vec4[1] << 8) + (vec4[2] << 16) + (vec4[3] << 24);
+	}
+
+	static getObjectByID(id){
+		return this.objects[id];
 	}
 
 }

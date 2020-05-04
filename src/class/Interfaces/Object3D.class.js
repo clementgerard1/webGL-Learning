@@ -12,7 +12,7 @@ const glmatrix = require("../../../node_modules/gl-matrix/gl-matrix-min.js");
 class Object3D{
 
 	constructor(){
-		this.id = Utils.newID();
+		this.id = Utils.newID(this);
 		this.transparency = false;
 		this.opacity = 1;
 		this.mirror = false;
@@ -130,7 +130,9 @@ class Object3D{
 
 	getPosition(){
     const temp = [];
+    this.disableStepUpAnimation();
     this.render(temp);
+    this.enableStepUpAnimation();
     const position = glmatrix.vec3.fromValues(0, 0, 0);
     glmatrix.vec3.transformMat4(position, position, temp[this.id][1]);
     return position;
@@ -251,6 +253,10 @@ class Object3D{
   }
 
 	draw(webGLProgram){
+    if(webGLProgram.getShaderBuilder().getMode() == "event"){
+      webGLProgram.getContext().uniform4fv(webGLProgram.getShaderBuilder().getPointer("IDasColor"), Utils.idAsColor(this.id));
+    }
+
 		if(this.transparency){
 			webGLProgram.getContext().depthMask(false);
 		}else{

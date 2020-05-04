@@ -4,6 +4,7 @@ const ImageTexture = require("./Textures/ImageTexture.class.js");
 const MirrorTexture = require("./Textures/MirrorTexture.class.js");
 const FrameTexture = require("./Textures/FrameTexture.class.js");
 const CanvasTexture = require("./Textures/CanvasTexture.class.js");
+const EventTexture = require("./Textures/EventTexture.class.js");
 
 class WebGLProgram{
 
@@ -42,6 +43,17 @@ class WebGLProgram{
 		//Variables
 		this.buffers = [];
 
+		this.preFrameFunction = null;
+		this.postFrameFunction = null;
+
+	}
+
+	setPreFrameFunction(func){
+		this.preFrameFunction = func;
+	}
+
+	setPostFrameFunction(func){
+		this.postFrameFunction = func;
 	}
 
 	setFPSDisplayTime(fpsDisplayTime){
@@ -92,6 +104,11 @@ class WebGLProgram{
 
 	createColorTexture(r, g, b, a){
 		const texture = new ColorTexture(this, r, g, b, a);
+		return texture;
+	}
+
+	createEventTexture(renderer){
+		const texture = new EventTexture(this, renderer);
 		return texture;
 	}
 
@@ -180,6 +197,10 @@ class WebGLProgram{
 
 	updateFrame(){
 
+		if(this.preFrameFunction != null){
+			this.preFrameFunction();
+		}
+
 		if(this.fpsCallback != null){
 			const now = new Date().getTime();
 			if(this.fpsLast != null){
@@ -203,6 +224,10 @@ class WebGLProgram{
 
 		for(let i = 0 ; i < this.scenes.length ; i++){
 			this.scenes[i].render(this);
+		}
+
+		if(this.postFrameFunction != null){
+			this.postFrameFunction();
 		}
 
 		//Next Frame

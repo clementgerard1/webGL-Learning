@@ -41,14 +41,14 @@ class ShaderBuilder{
 			"mirrorPoint" : true,
 			"mirrorVec1" : true,
 			"mirrorVec2" : true,
-
 		}
 
 		//Fragment Shader Uniform
 		this.fragmentUniforms = {
 			"texture" : true,// ALWAYS TRUE
 			"opacity" : true,
-			"normalColor" : false
+			"normalColor" : false,
+			"IDasColor" : false,
 			//"depthTexture" : true,
 		}
 
@@ -118,6 +118,10 @@ class ShaderBuilder{
 			"normalColor" : {
 				"type" : "uniform lowp vec4",
 				"name" : "uNormalColor",
+			},
+			"IDasColor" : {
+				"type" : "uniform highp vec4",
+				"name" : "uIdColor",
 			} 
 			// "depthTexture" : {
 			// 	"type" : "uniform bool",
@@ -139,6 +143,7 @@ class ShaderBuilder{
 			"mirrorPoint" : null,
 			"opacity" : null,
 			"normalColor" : null,
+			"IDasColor" : null,
 			//"depthTexture" : null,
 			
 		}
@@ -166,6 +171,7 @@ class ShaderBuilder{
 				this.fragmentUniforms["normalColor"] = false;
 				this.fragmentUniforms["texture"] = true;
 				this.fragmentUniforms["opacity"] = true;
+				this.fragmentUniforms["IDasColor"] = false;
 			}else if(mode == "normal"){
 				this.triangleMode = false;
 				this.normalDisplay = true;
@@ -175,6 +181,18 @@ class ShaderBuilder{
 				this.fragmentUniforms["normalColor"] = true;
 				this.fragmentUniforms["texture"] = false;
 				this.fragmentUniforms["opacity"] = false;
+				this.fragmentUniforms["IDasColor"] = false;
+				
+			}else if(mode == "event"){
+				this.triangleMode = true;
+				this.normalDisplay = false;
+				this.fragmentAttributes["color"] = false;
+				this.fragmentAttributes["normal"] = false;
+				this.fragmentAttributes["textureCoordonnees"] = false;
+				this.fragmentUniforms["normalColor"] = false;
+				this.fragmentUniforms["texture"] = false;
+				this.fragmentUniforms["opacity"] = false;
+				this.fragmentUniforms["IDasColor"] = true;
 				
 			}else{
 				this.triangleMode = true;
@@ -185,6 +203,7 @@ class ShaderBuilder{
 				this.fragmentUniforms["normalColor"] = false;
 				this.fragmentUniforms["texture"] = true;
 				this.fragmentUniforms["opacity"] = true;
+				this.fragmentUniforms["IDasColor"] = false;
 			}
 		}
 	}
@@ -462,7 +481,7 @@ class ShaderBuilder{
 			}
 		`;		
 
-		if(this.mode != "normal"){
+		if(this.mode != "normal" && this.mode != "event"){
 			//Point Light
 			for(let n in this.pointLights){
 		  	this.vertexSrc += this.pointLights[n].getVertexShaderPreCode({
@@ -509,7 +528,7 @@ class ShaderBuilder{
 				this.vertexSrc += '}';
 			}
 
-			if(this.mode != "normal"){
+			if(this.mode != "normal" && this.mode != "event"){
 				//Point Light
 				for(let n in this.pointLights){
 			  	this.vertexSrc += this.pointLights[n].getVertexShaderMainCode({
@@ -551,7 +570,7 @@ class ShaderBuilder{
 			}
 		}
 
-		if(this.mode != "normal"){
+		if(this.mode != "normal" && this.mode != "event"){
 			//Point Light
 			for(let n in this.pointLights){
 		  	this.fragmentSrc += this.pointLights[n].getFragmentShaderPreCode({
@@ -579,7 +598,7 @@ class ShaderBuilder{
 			}
 			//this.fragmentSrc += "}"
 
-			if(this.mode != "normal"){
+			if(this.mode != "normal" && this.mode != "event"){
 				//LIGHTS
 				for(let n in this.ambientLights){
 			  	this.fragmentSrc += this.ambientLights[n].getFragmentShaderMainCode({
@@ -613,19 +632,18 @@ class ShaderBuilder{
 			  		"name" : n
 			  	});
 				}
-			}else{
+			}else if(this.mode == "normal"){
 				this.fragmentSrc += "gl_FragColor = " + this.infos["normalColor"].name + ";";
 			}
-
 
 			//Transparency
 			if(this.fragmentUniforms["opacity"]){
 				this.fragmentSrc += "gl_FragColor.a = gl_FragColor.a * " + this.infos["opacity"].name + ";";
 			}
 
-			// this.fragmentSrc += "if(" + this.infos["depthTexture"].name + " == true){";
-			// this.fragmentSrc += "gl_FragColor = vec4(gl_FragCoord.z, gl_FragCoord.z, gl_FragCoord.z, 1);";
-			// this.fragmentSrc += "}";
+			if(this.mode == "event"){
+				this.fragmentSrc += "gl_FragColor = vec4(" + this.infos["IDasColor"].name + ".xyz, 0);";
+			}
 
 		this.fragmentSrc += "}";
 

@@ -199,6 +199,7 @@ class Cube extends Object3D {
         );
 
         if(webGLProgram.getShaderBuilder().getMode() != "normal"){
+
            webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.positions), webGLProgram.getContext().STATIC_DRAW);
         }else{
             const positions = super.generateNormalPositions(that);
@@ -291,6 +292,10 @@ class Cube extends Object3D {
         neww.textureCoordonnees = this.textureCoordonnees.slice();
         Object.assign(neww.bufferFunctions, this.bufferFunctions);
         return neww;
+    }
+
+    getTextures(){
+        return this.textures;
     }
 
     getTextureDimensions(){

@@ -8,7 +8,6 @@ class FrameTexture extends Texture{
 		this.gl = webGLProgram.getContext();
 		this.texture = this.gl.createTexture();
 		this.renderer = renderer;
-		//this.renderer.setInitialisation(false);
 		this.renderer.setResetConfigAtEnd(true);
 	}
 
@@ -35,7 +34,11 @@ class FrameTexture extends Texture{
 		const fb = this.gl.createFramebuffer();
 		this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, fb);
 		 
-		// attach the texture as the first color attachment
+		const depthBuffer = this.gl.createRenderbuffer();
+		this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, depthBuffer);
+		this.gl.renderbufferStorage(this.gl.RENDERBUFFER, this.gl.DEPTH_COMPONENT16, viewPortDimensions.width, viewPortDimensions.height);
+		this.gl.framebufferRenderbuffer(this.gl.FRAMEBUFFER, this.gl.DEPTH_ATTACHMENT, this.gl.RENDERBUFFER, depthBuffer);
+
 		this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, this.texture, 0);
 
 		//RENDER

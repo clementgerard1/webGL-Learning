@@ -66,7 +66,9 @@ class Camera extends Movable{
   }
 
 	getPosition(){
+		this.disableStepUpAnimation();
 		const transform = this.render();
+		this.enableStepUpAnimation();
 		const position = glmatrix.vec3.create();
 		glmatrix.vec3.transformMat4(position, this.position, transform);
 		return position;

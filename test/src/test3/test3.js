@@ -103,12 +103,12 @@ module.exports = function(){
 	camera.setType("perspective", {
 
 	});
-	const rotateCam = new Rotate(360, [0,1,0], 10000, function(){
+	const rotateCam = new Rotate(360, [0,1,0], 2100, function(){
 		rotateCam.reset();
 	});
 	rotateCam.start();
 	rotateCam.setPosition(0, 0, -15.5);
-	const rotateCam2 = new Rotate(360, [1,0,0], 5000, function(){
+	const rotateCam2 = new Rotate(360, [1,0,0], 1000, function(){
 		rotateCam2.reset();
 	});
 
