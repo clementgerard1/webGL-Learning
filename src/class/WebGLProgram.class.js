@@ -198,9 +198,11 @@ class WebGLProgram{
 
 		//Render
 		for(let i = 0 ; i < this.scenes.length ; i++){
+			this.scenes[i].renderTextures(this);
+		}
 
+		for(let i = 0 ; i < this.scenes.length ; i++){
 			this.scenes[i].render(this);
-
 		}
 
 		//Next Frame

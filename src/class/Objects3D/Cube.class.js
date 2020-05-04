@@ -162,9 +162,6 @@ class Cube extends Object3D {
                 if(that.textures[text] instanceof CanvasTexture){
                   that.textures[text].update();
                 }
-                if(that.textures[text] instanceof FrameTexture){
-                  that.textures[text].update();  
-                }
 
                 webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
                 webGLProgram.getContext().bindTexture(webGLProgram.getContext().TEXTURE_2D, that.textures[text].getTexture());
@@ -294,6 +291,10 @@ class Cube extends Object3D {
         neww.textureCoordonnees = this.textureCoordonnees.slice();
         Object.assign(neww.bufferFunctions, this.bufferFunctions);
         return neww;
+    }
+
+    getTextureDimensions(){
+        return [this.size, this.size];
     }
 
 } 

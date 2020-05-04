@@ -4,7 +4,6 @@ class Renderer{
 		this.scissor = null;
 		this.scene = scene;
 		this.transforms = [];
-		this.init = true;
 		this.resetConfigAtEnd = false;
 		this.memory = [];
 		this.viewport = [0, 0, 1, 1];
@@ -12,6 +11,13 @@ class Renderer{
 		this.stepUpObjectAnimation = true;
 		this.stepUpCameraAnimation = true;
 		this.stepUpLightAnimation = true;
+
+		this.viewPortUpdate = true;
+		this.clearColorUpdate = true;
+		this.depthTestUpdate = true;
+		this.cullFaceTestUpdate = true;
+		this.clearColorBuffer = true;
+		this.clearDepthBuffer = true;
 
 		if(typeof initFunc == "undefined"){
 			this.initUser = function(program){};
@@ -58,9 +64,83 @@ class Renderer{
 		this.endUser = func;
 	}
 
-	render(webGLProgram){
+	enableViewPortUpdate(){
+		this.viewPortUpdate = true;
+	}
 
-		this.memory = [];
+	disableViewPortUpdate(){
+		this.viewPortUpdate = false;
+	}
+
+	enableClearColorUpdate(){
+		this.clearColorUpdate = true;
+	}
+
+	disableClearColorUpdate(){
+		this.clearColorUpdate = false;
+	}
+
+	enableDepthTestUpdate(){
+		this.depthTestUpdate = true;
+	}
+
+	disableDepthTestUpdate(){
+		this.depthTestUpdate = false;
+	}
+
+	enableCullFaceTestUpdate(){
+		this.cullFaceTestUpdate = true;
+	}
+
+	disableCullFaceTestUpdate(){
+		this.cullFaceTestUpdate = false;
+	}
+
+	enableClearColorBuffer(){
+		this.clearColorBuffer = true;
+	}
+
+	disableClearColorBuffer(){
+		this.clearColorBuffer = false;
+	}
+
+	enableClearDepthBuffer(){
+		this.clearDepthBuffer = true;
+	}
+
+	disableClearDepthBuffer(){
+		this.clearDepthBuffer = false;
+	}
+
+	renderTextures(webGLProgram){
+		const sceneObjects = this.scene.getAllObjects();
+		for(let obj in sceneObjects){
+			this.scene.objects[obj].renderTextures();
+		}
+	}
+
+	render(webGLProgram, viewPortDimensions){
+
+
+		if(typeof viewPortDimensions == "object"){
+			viewPortDimensions = {
+				"width" : viewPortDimensions[0],
+				"height" : viewPortDimensions[1]
+			}
+		}
+
+		if(typeof viewPortDimensions == "undefined"){
+			viewPortDimensions = {
+				"width" : webGLProgram.canvas.clientWidth,
+				"height" : webGLProgram.canvas.clientHeight
+			}
+		}
+
+		const gl = webGLProgram.getContext();
+
+		if(this.resetConfigAtEnd){
+			this._stateMemory(webGLProgram);
+		}
 
 		this.initUser(webGLProgram);
 
@@ -69,36 +149,65 @@ class Renderer{
 		}
 
 		if(!webGLProgram.actualShaderBuilder.checkLights(this.scene.getNbAmbientLights(), this.scene.getNbDirectionalLights(), this.scene.getNbPointLights(), this.scene.getNbSpotLights())){
-			webGLProgram.actualShaderBuilder.buildShaderProgram(webGLProgram.getContext(), this.scene);
+			webGLProgram.actualShaderBuilder.buildShaderProgram(gl, this.scene);
 		} else if(webGLProgram.actualShaderBuilder.needRebuild()){
-			webGLProgram.actualShaderBuilder.buildShaderProgram(webGLProgram.getContext(), this.scene);
+			webGLProgram.actualShaderBuilder.buildShaderProgram(gl, this.scene);
 		}
-		webGLProgram.getContext().useProgram(webGLProgram.actualShaderBuilder.getShaderProgram());
+		gl.useProgram(webGLProgram.actualShaderBuilder.getShaderProgram());
 
 		//Création des buffers
 		webGLProgram.buffers = [];
-		webGLProgram.buffers["index"] = webGLProgram.getContext().createBuffer();
+		webGLProgram.buffers["index"] = gl.createBuffer();
 		const attributs = webGLProgram.actualShaderBuilder.getActiveAttributes();
 		for(let a in attributs){
-			webGLProgram.buffers[attributs[a]] = webGLProgram.getContext().createBuffer();
+			webGLProgram.buffers[attributs[a]] = gl.createBuffer();
 		}
 
-		webGLProgram.getContext().viewport(this.viewport[0] * webGLProgram.canvas.width, this.viewport[1] * webGLProgram.canvas.height, this.viewport[2] * webGLProgram.canvas.width, this.viewport[3] * webGLProgram.canvas.height);
+
+		if(this.viewPortUpdate){
+			gl.viewport(this.viewport[0] * viewPortDimensions.width, this.viewport[1] * viewPortDimensions.height, this.viewport[2] * viewPortDimensions.width, this.viewport[3] * viewPortDimensions.height);
+		}
 
 		if(this.stepUpCameraAnimation){
 			this.scene.getCamera().enableStepUpAnimation();
 		}else{
 			this.scene.getCamera().disableStepUpAnimation();
 		}
+		gl.uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix((viewPortDimensions.width * this.viewport[2]) / (viewPortDimensions.height * this.viewport[3]) ));
 
-		webGLProgram.getContext().uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix((webGLProgram.getContext().canvas.clientWidth * this.viewport[2]) / (webGLProgram.getContext().canvas.clientHeight * this.viewport[3]) ));
-
-		if(this.resetConfigAtEnd){
-			this._stateMemory(webGLProgram);
+		if( this.scissor != null){
+			gl.enable(gl.SCISSOR_TEST);
+			gl.scissor(this.scissor[0]  * viewPortDimensions.width, this.scissor[1] * viewPortDimensions.height - this.scissor[3] * viewPortDimensions.height, this.scissor[2]  * viewPortDimensions.width, this.scissor[3] * viewPortDimensions.height);
+			gl.getParameter(gl.SCISSOR_BOX);
+		}else{
+			gl.disable(gl.SCISSOR_TEST);
 		}
 
-		if(this.init){
-			this._init(webGLProgram);
+
+		if(this.clearColorUpdate){
+			const colors = this.scene.getClearColor();
+			gl.clearColor(colors[0], colors[1], colors[2], colors[3]);
+		}
+
+		if(this.depthTestUpdate){
+			gl.enable(gl.DEPTH_TEST); 
+			gl.depthFunc(gl.LEQUAL); 
+		}
+
+		if(this.cullFaceTestUpdate){
+			gl.enable(gl.CULL_FACE);
+		}
+
+		if(this.clearColorBuffer){
+			gl.clear(gl.COLOR_BUFFER_BIT);
+		}
+
+		if(this.clearDepthBuffer){
+			gl.clear(gl.DEPTH_BUFFER_BIT);
+		}
+
+		for(let i = 0 ; i < attributs.length ; i++){
+			gl.enableVertexAttribArray(webGLProgram.actualShaderBuilder.getPointer(attributs[i]));
 		}
 
 		//Tri des objets
@@ -118,10 +227,10 @@ class Renderer{
 
 		//Configuration (si transparent non vide)
 		if(transparents.length != 0 || mirrors.length != 0){
-			webGLProgram.getContext().enable(webGLProgram.getContext().BLEND);
-			webGLProgram.getContext().blendFunc(webGLProgram.getContext().SRC_ALPHA, webGLProgram.getContext().ONE_MINUS_SRC_ALPHA);  
+			gl.enable(gl.BLEND);
+			gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);  
 		}else{
-			webGLProgram.getContext().disable(webGLProgram.getContext().BLEND);
+			gl.disable(gl.BLEND);
 		}
 
 		//RENDERING
@@ -144,13 +253,13 @@ class Renderer{
 
 		//Affichage des mirroirs
 
-		webGLProgram.getContext().disable(webGLProgram.getContext().CULL_FACE);
+		gl.disable(gl.CULL_FACE);
 		
 		for(let i = 0 ; i < mirrors.length ; i++){
 			this.transforms[mirrors[i].id][0].draw(webGLProgram, activeAttributs, this.transforms[mirrors[i].id][1], false);
 		}
 
-		//Tri des objets transparent (CHANGER LA FORMULE DE TRI VOIR TEST2 QUAND VALIDE)
+		//Tri des objets transparent
 		const that = this;
 		const cameraPosition = that.scene.getCamera().getPosition();
 		transparents.sort(function(elem1, elem2){
@@ -168,7 +277,7 @@ class Renderer{
 			this.transforms[transparents[i].id][0].draw(webGLProgram, activeAttributs, this.transforms[transparents[i].id][1], true);
 		}
 
-		webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
+		gl.enable(gl.CULL_FACE);
 
 		//Lumieres
 		for(let n in this.scene.ambientLights){
@@ -215,10 +324,6 @@ class Renderer{
 		this.initUser = func;
 	}
 
-	setInitialisation(bool){
-		this.init = bool;
-	}
-
 	setResetConfigAtEnd(bool){
 		this.resetConfigAtEnd = bool;
 	}
@@ -236,33 +341,6 @@ class Renderer{
 		return this.scissor;
 	}
 
-	_init(webGLProgram){
-		const gl = webGLProgram.getContext();
-
-		if( this.scissor != null){
-			gl.enable(gl.SCISSOR_TEST);
-			gl.scissor(this.scissor[0]  * webGLProgram.canvas.width, this.scissor[1] * webGLProgram.canvas.height - this.scissor[3] * webGLProgram.canvas.height, this.scissor[2]  * webGLProgram.canvas.width, this.scissor[3] * webGLProgram.canvas.height);
-			gl.getParameter(gl.SCISSOR_BOX);
-		}else{
-			gl.disable(gl.SCISSOR_TEST);
-		}
-		//Initialisation
-		const colors = this.scene.getClearColor();
-		gl.clearColor(colors[0], colors[1], colors[2], colors[3]);
-
-		gl.enable(gl.DEPTH_TEST); 
-		gl.depthFunc(gl.LEQUAL); 
-
-		webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
-
-		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-		const attributs = webGLProgram.actualShaderBuilder.getActiveAttributes();
-		for(let i = 0 ; i < attributs.length ; i++){
-			gl.enableVertexAttribArray(webGLProgram.actualShaderBuilder.getPointer(attributs[i]));
-		}
-		
-	}
 
 	_stateMemory(webGLProgram){
 		this.memory["clearColor"] = webGLProgram.getContext().getParameter(webGLProgram.getContext().COLOR_CLEAR_VALUE);
@@ -314,7 +392,6 @@ class Renderer{
 		}
 		neww.scene = this.scene;
 		Object.assign(neww.transforms, this.transforms);
-		neww.init = this.init;
 		neww.resetConfigAtEnd = this.resetConfigAtEnd;
 		neww.memory = [];
 		neww.viewport = this.viewport.slice();

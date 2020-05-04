@@ -1,5 +1,6 @@
 const MirrorTexture = require("../Textures/MirrorTexture.class");
 const ColorTexture = require("../Textures/ColorTexture.class");
+const FrameTexture = require("../Textures/FrameTexture.class");
 const Translate = require("../Movements/Translate.class.js");
 const Scale = require("../Movements/Scale.class.js");
 const Rotate = require("../Movements/Rotate.class.js");
@@ -38,6 +39,14 @@ class Object3D{
     this.normals = [];
 
 	}
+
+  renderTextures(){
+      for(let n in this.textures){
+          if(this.textures[n] instanceof FrameTexture){
+            this.textures[n].update(this);  
+          }
+      }
+  }
 
   getMaterial(){
     return this.material;
@@ -301,6 +310,8 @@ class Object3D{
       this.indexes[i*3+2] = indexClone[centers[i][1] + 2];
     }
   }
+
+
 
 }
 

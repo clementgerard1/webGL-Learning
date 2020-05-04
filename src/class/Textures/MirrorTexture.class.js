@@ -52,7 +52,7 @@ class MirrorTexture extends Texture{
 
 		const newScene = this.webGLProgram.getScene().clone([mirrorObject]);
 		const renderer = new Renderer(newScene);
-		renderer.setInitialisation(false);
+		// renderer.setInitialisation(false);
 		renderer.setResetConfigAtEnd(true);
 		renderer.disableObjectStepUpAnimation();
 		renderer.disableLightStepUpAnimation();

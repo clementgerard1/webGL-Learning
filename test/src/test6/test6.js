@@ -26,6 +26,8 @@ module.exports = function(){
 	canvas.height = 128;
 	const texture1 = program.createCanvasTexture(canvas, function(canvas){
 		const ctx = canvas.getContext("2d");
+		ctx.fillStyle = "#FF0000";
+		ctx.fillRect(0, 0, 1000, 1000);
 		ctx.fillStyle = "#00FF00";
 		ctx.font = "10px Arial";
 		ctx.fillText("CANVAS", 20, 40);
@@ -34,12 +36,22 @@ module.exports = function(){
 
 	//Frame Texture
 	const scene2 = new Scene();
-	const c1 = new Cube();	c1.setPosition(0, 0, -0); scene2.add3DObject("c1", c1); const t1 = program.createColorTexture(0, 1, 0, 1); c1.addTexture("color", t1);
+	const c1 = new Cube();	c1.setPosition(0, 0, -0); scene2.add3DObject("c1", c1); c1.setSize(1); const t1 = program.createColorTexture(1, 0, 0, 1); c1.addTexture("color", t1);
+	const rotateT = new Rotate(360, [0, 0, 1], 1200); rotateT.setRepeat(true);
+	const rotateT2 = new Rotate(360, [1, 0, 0], 3000); rotateT.setRepeat(true);
+	rotateT.setPosition(-1, 0, 0);
+	rotateT2.setPosition(0, 0, 2);
+	c1.setPosition(1, 0, -2);
+	c1.addMovement(rotateT);
+	c1.addMovement(rotateT2);
+	rotateT.start();
+	rotateT2.start();
+
 	scene2.add3DObject(c1);
 	const cameraTexture = new Camera();
 	const ambientT = new AmbientLight();
 	ambientT.setPower(1.);
-	ambientT.setRGB(1., 0., 1.);
+	ambientT.setRGB(1., 1., 1.);
 	scene2.addLight("ambient", ambientT);
 
 	cameraTexture.setType("perspective", {
@@ -85,9 +97,9 @@ module.exports = function(){
 	cube1.addMovement(rotate1);
 	cube1.addMovement(rotate11);
 	cube2.addMovement(rotate2);
-	//cube2.addMovement(rotate22);
-	//cube3.addMovement(rotate3);
-	//cube3.addMovement(rotate33);
+	cube2.addMovement(rotate22);
+	cube3.addMovement(rotate3);
+	cube3.addMovement(rotate33);
 	cube3.addMovement(rotate333);
 
 	scene.setClearColor(0,0,0,1);
@@ -154,7 +166,8 @@ module.exports = function(){
 
 	//affichage des normals
 	const renderTLNormals = renderTL.clone();
-	renderTLNormals.setInitialisation(false);
+	renderTLNormals.disableClearDepthBuffer();
+	renderTLNormals.disableClearColorBuffer();
 
 	const shader = scene.getShaderBuilder();
 	const nShader = shader.clone(); // Normal Shader
@@ -177,7 +190,7 @@ module.exports = function(){
 		//AFTER
 	});
 	renderTR.setViewPort(0.5, 0.5, 0.5, 0.5);
-	renderTR.setInitialisation(false);
+	renderTR.disableClearColorBuffer();
 	scene.addRenderer(renderTR);
 
 	//Bottom left
@@ -188,7 +201,7 @@ module.exports = function(){
 		//AFTER
 	});
 	renderBL.setViewPort(0., 0., 0.5, 0.5);
-	renderBL.setInitialisation(false);
+	renderBL.disableClearColorBuffer();
 	scene.addRenderer(renderBL);
 
 	//bottom right
@@ -200,7 +213,7 @@ module.exports = function(){
 		scene.setCamera("tl");
 	});
 	renderBR.setViewPort(0.5, 0., 0.5, 0.5);
-	renderBR.setInitialisation(false);
+	renderBR.disableClearColorBuffer();
 	scene.addRenderer(renderBR);
 
 

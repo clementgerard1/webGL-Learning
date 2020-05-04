@@ -63,8 +63,11 @@ class Plan extends Object3D {
         for(let text in that.textures){
             if(!(that.textures[text] instanceof MirrorTexture)){
 
-                if(that.textures[text] instanceof CanvasTexture || that.textures[text] instanceof FrameTexture){
+                if(that.textures[text] instanceof CanvasTexture){
                   that.textures[text].update();
+                }
+                if(that.textures[text] instanceof FrameTexture){
+                  that.textures[text].update(that);
                 }
 
                 webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
@@ -192,6 +195,10 @@ class Plan extends Object3D {
         Object.assign(neww.textures, this.textures);
         Object.assign(neww.bufferFunctions, this.bufferFunctions);
         return neww;
+    }
+
+    getTextureDimensions(){
+        return [this.width, this.height];
     }
 
 } 

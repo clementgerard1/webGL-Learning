@@ -381,6 +381,8 @@ var MirrorTexture = require("../Textures/MirrorTexture.class");
 
 var ColorTexture = require("../Textures/ColorTexture.class");
 
+var FrameTexture = require("../Textures/FrameTexture.class");
+
 var Translate = require("../Movements/Translate.class.js");
 
 var Scale = require("../Movements/Scale.class.js");
@@ -424,6 +426,15 @@ function () {
   }
 
   _createClass(Object3D, [{
+    key: "renderTextures",
+    value: function renderTextures() {
+      for (var n in this.textures) {
+        if (this.textures[n] instanceof FrameTexture) {
+          this.textures[n].update(this);
+        }
+      }
+    }
+  }, {
     key: "getMaterial",
     value: function getMaterial() {
       return this.material;
@@ -733,7 +744,7 @@ function () {
 }();
 
 module.exports = Object3D;
-},{"../../../node_modules/gl-matrix/gl-matrix-min.js":36,"../Material.class.js":11,"../Movements/LookAt.class.js":12,"../Movements/Rotate.class.js":13,"../Movements/Scale.class.js":14,"../Movements/Translate.class.js":15,"../Textures/ColorTexture.class":23,"../Textures/MirrorTexture.class":26,"../Utils.class":27}],6:[function(require,module,exports){
+},{"../../../node_modules/gl-matrix/gl-matrix-min.js":36,"../Material.class.js":11,"../Movements/LookAt.class.js":12,"../Movements/Rotate.class.js":13,"../Movements/Scale.class.js":14,"../Movements/Translate.class.js":15,"../Textures/ColorTexture.class":23,"../Textures/FrameTexture.class":24,"../Textures/MirrorTexture.class":26,"../Utils.class":27}],6:[function(require,module,exports){
 "use strict";
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -1847,10 +1858,6 @@ function (_Object3D) {
             that.textures[text].update();
           }
 
-          if (that.textures[text] instanceof FrameTexture) {
-            that.textures[text].update();
-          }
-
           webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
           webGLProgram.getContext().bindTexture(webGLProgram.getContext().TEXTURE_2D, that.textures[text].getTexture());
           webGLProgram.getContext().uniform1i(webGLProgram.getShaderBuilder().getPointer("texture"), false, 0);
@@ -1953,6 +1960,11 @@ function (_Object3D) {
       neww.textureCoordonnees = this.textureCoordonnees.slice();
       Object.assign(neww.bufferFunctions, this.bufferFunctions);
       return neww;
+    }
+  }, {
+    key: "getTextureDimensions",
+    value: function getTextureDimensions() {
+      return [this.size, this.size];
     }
   }]);
 
@@ -2190,8 +2202,12 @@ function (_Object3D) {
 
       for (var text in that.textures) {
         if (!(that.textures[text] instanceof MirrorTexture)) {
-          if (that.textures[text] instanceof CanvasTexture || that.textures[text] instanceof FrameTexture) {
+          if (that.textures[text] instanceof CanvasTexture) {
             that.textures[text].update();
+          }
+
+          if (that.textures[text] instanceof FrameTexture) {
+            that.textures[text].update(that);
           }
 
           webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
@@ -2295,6 +2311,11 @@ function (_Object3D) {
       Object.assign(neww.bufferFunctions, this.bufferFunctions);
       return neww;
     }
+  }, {
+    key: "getTextureDimensions",
+    value: function getTextureDimensions() {
+      return [this.width, this.height];
+    }
   }]);
 
   return Plan;
@@ -2303,6 +2324,8 @@ function (_Object3D) {
 module.exports = Plan;
 },{"../../../node_modules/gl-matrix/gl-matrix-min.js":36,"../Interfaces/Object3D.class.js":5,"../Movements/Rotate.class.js":13,"../Movements/Scale.class.js":14,"../Movements/Translate.class.js":15,"../Textures/CanvasTexture.class":22,"../Textures/ColorTexture.class":23,"../Textures/FrameTexture.class":24,"../Textures/MirrorTexture.class.js":26}],19:[function(require,module,exports){
 "use strict";
+
+function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2319,13 +2342,18 @@ function () {
     this.scissor = null;
     this.scene = scene;
     this.transforms = [];
-    this.init = true;
     this.resetConfigAtEnd = false;
     this.memory = [];
     this.viewport = [0, 0, 1, 1];
     this.stepUpObjectAnimation = true;
     this.stepUpCameraAnimation = true;
     this.stepUpLightAnimation = true;
+    this.viewPortUpdate = true;
+    this.clearColorUpdate = true;
+    this.depthTestUpdate = true;
+    this.cullFaceTestUpdate = true;
+    this.clearColorBuffer = true;
+    this.clearDepthBuffer = true;
 
     if (typeof initFunc == "undefined") {
       this.initUser = function (program) {};
@@ -2381,9 +2409,97 @@ function () {
       this.endUser = func;
     }
   }, {
+    key: "enableViewPortUpdate",
+    value: function enableViewPortUpdate() {
+      this.viewPortUpdate = true;
+    }
+  }, {
+    key: "disableViewPortUpdate",
+    value: function disableViewPortUpdate() {
+      this.viewPortUpdate = false;
+    }
+  }, {
+    key: "enableClearColorUpdate",
+    value: function enableClearColorUpdate() {
+      this.clearColorUpdate = true;
+    }
+  }, {
+    key: "disableClearColorUpdate",
+    value: function disableClearColorUpdate() {
+      this.clearColorUpdate = false;
+    }
+  }, {
+    key: "enableDepthTestUpdate",
+    value: function enableDepthTestUpdate() {
+      this.depthTestUpdate = true;
+    }
+  }, {
+    key: "disableDepthTestUpdate",
+    value: function disableDepthTestUpdate() {
+      this.depthTestUpdate = false;
+    }
+  }, {
+    key: "enableCullFaceTestUpdate",
+    value: function enableCullFaceTestUpdate() {
+      this.cullFaceTestUpdate = true;
+    }
+  }, {
+    key: "disableCullFaceTestUpdate",
+    value: function disableCullFaceTestUpdate() {
+      this.cullFaceTestUpdate = false;
+    }
+  }, {
+    key: "enableClearColorBuffer",
+    value: function enableClearColorBuffer() {
+      this.clearColorBuffer = true;
+    }
+  }, {
+    key: "disableClearColorBuffer",
+    value: function disableClearColorBuffer() {
+      this.clearColorBuffer = false;
+    }
+  }, {
+    key: "enableClearDepthBuffer",
+    value: function enableClearDepthBuffer() {
+      this.clearDepthBuffer = true;
+    }
+  }, {
+    key: "disableClearDepthBuffer",
+    value: function disableClearDepthBuffer() {
+      this.clearDepthBuffer = false;
+    }
+  }, {
+    key: "renderTextures",
+    value: function renderTextures(webGLProgram) {
+      var sceneObjects = this.scene.getAllObjects();
+
+      for (var obj in sceneObjects) {
+        this.scene.objects[obj].renderTextures();
+      }
+    }
+  }, {
     key: "render",
-    value: function render(webGLProgram) {
-      this.memory = [];
+    value: function render(webGLProgram, viewPortDimensions) {
+      if (_typeof(viewPortDimensions) == "object") {
+        viewPortDimensions = {
+          "width": viewPortDimensions[0],
+          "height": viewPortDimensions[1]
+        };
+      }
+
+      if (typeof viewPortDimensions == "undefined") {
+        viewPortDimensions = {
+          "width": webGLProgram.canvas.clientWidth,
+          "height": webGLProgram.canvas.clientHeight
+        };
+      }
+
+      var gl = webGLProgram.getContext();
+
+      if (this.resetConfigAtEnd) {
+        this._stateMemory(webGLProgram);
+      }
+
       this.initUser(webGLProgram);
 
       if (this.scene.getShaderBuilder() != webGLProgram.actualShaderBuilder) {
@@ -2391,22 +2507,24 @@ function () {
       }
 
       if (!webGLProgram.actualShaderBuilder.checkLights(this.scene.getNbAmbientLights(), this.scene.getNbDirectionalLights(), this.scene.getNbPointLights(), this.scene.getNbSpotLights())) {
-        webGLProgram.actualShaderBuilder.buildShaderProgram(webGLProgram.getContext(), this.scene);
+        webGLProgram.actualShaderBuilder.buildShaderProgram(gl, this.scene);
       } else if (webGLProgram.actualShaderBuilder.needRebuild()) {
-        webGLProgram.actualShaderBuilder.buildShaderProgram(webGLProgram.getContext(), this.scene);
+        webGLProgram.actualShaderBuilder.buildShaderProgram(gl, this.scene);
       }
 
-      webGLProgram.getContext().useProgram(webGLProgram.actualShaderBuilder.getShaderProgram()); //Création des buffers
+      gl.useProgram(webGLProgram.actualShaderBuilder.getShaderProgram()); //Création des buffers
 
       webGLProgram.buffers = [];
-      webGLProgram.buffers["index"] = webGLProgram.getContext().createBuffer();
+      webGLProgram.buffers["index"] = gl.createBuffer();
       var attributs = webGLProgram.actualShaderBuilder.getActiveAttributes();
 
       for (var a in attributs) {
-        webGLProgram.buffers[attributs[a]] = webGLProgram.getContext().createBuffer();
+        webGLProgram.buffers[attributs[a]] = gl.createBuffer();
       }
 
-      webGLProgram.getContext().viewport(this.viewport[0] * webGLProgram.canvas.width, this.viewport[1] * webGLProgram.canvas.height, this.viewport[2] * webGLProgram.canvas.width, this.viewport[3] * webGLProgram.canvas.height);
+      if (this.viewPortUpdate) {
+        gl.viewport(this.viewport[0] * viewPortDimensions.width, this.viewport[1] * viewPortDimensions.height, this.viewport[2] * viewPortDimensions.width, this.viewport[3] * viewPortDimensions.height);
+      }
 
       if (this.stepUpCameraAnimation) {
         this.scene.getCamera().enableStepUpAnimation();
@@ -2414,14 +2532,40 @@ function () {
         this.scene.getCamera().disableStepUpAnimation();
       }
 
-      webGLProgram.getContext().uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(webGLProgram.getContext().canvas.clientWidth * this.viewport[2] / (webGLProgram.getContext().canvas.clientHeight * this.viewport[3])));
+      gl.uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(viewPortDimensions.width * this.viewport[2] / (viewPortDimensions.height * this.viewport[3])));
 
-      if (this.resetConfigAtEnd) {
-        this._stateMemory(webGLProgram);
+      if (this.scissor != null) {
+        gl.enable(gl.SCISSOR_TEST);
+        gl.scissor(this.scissor[0] * viewPortDimensions.width, this.scissor[1] * viewPortDimensions.height - this.scissor[3] * viewPortDimensions.height, this.scissor[2] * viewPortDimensions.width, this.scissor[3] * viewPortDimensions.height);
+        gl.getParameter(gl.SCISSOR_BOX);
+      } else {
+        gl.disable(gl.SCISSOR_TEST);
       }
 
-      if (this.init) {
-        this._init(webGLProgram);
+      if (this.clearColorUpdate) {
+        var colors = this.scene.getClearColor();
+        gl.clearColor(colors[0], colors[1], colors[2], colors[3]);
+      }
+
+      if (this.depthTestUpdate) {
+        gl.enable(gl.DEPTH_TEST);
+        gl.depthFunc(gl.LEQUAL);
+      }
+
+      if (this.cullFaceTestUpdate) {
+        gl.enable(gl.CULL_FACE);
+      }
+
+      if (this.clearColorBuffer) {
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      }
+
+      if (this.clearDepthBuffer) {
+        gl.clear(gl.DEPTH_BUFFER_BIT);
+      }
+
+      for (var i = 0; i < attributs.length; i++) {
+        gl.enableVertexAttribArray(webGLProgram.actualShaderBuilder.getPointer(attributs[i]));
       } //Tri des objets
 
 
@@ -2430,22 +2574,22 @@ function () {
       var mirrors = [];
       var sceneObjects = this.scene.getAllObjects();
 
-      for (var i in sceneObjects) {
-        if (sceneObjects[i].isMirror()) {
-          mirrors[mirrors.length] = sceneObjects[i];
-        } else if (sceneObjects[i].isTransparent()) {
-          transparents[transparents.length] = sceneObjects[i];
+      for (var _i in sceneObjects) {
+        if (sceneObjects[_i].isMirror()) {
+          mirrors[mirrors.length] = sceneObjects[_i];
+        } else if (sceneObjects[_i].isTransparent()) {
+          transparents[transparents.length] = sceneObjects[_i];
         } else {
-          opaques[opaques.length] = sceneObjects[i];
+          opaques[opaques.length] = sceneObjects[_i];
         }
       } //Configuration (si transparent non vide)
 
 
       if (transparents.length != 0 || mirrors.length != 0) {
-        webGLProgram.getContext().enable(webGLProgram.getContext().BLEND);
-        webGLProgram.getContext().blendFunc(webGLProgram.getContext().SRC_ALPHA, webGLProgram.getContext().ONE_MINUS_SRC_ALPHA);
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       } else {
-        webGLProgram.getContext().disable(webGLProgram.getContext().BLEND);
+        gl.disable(gl.BLEND);
       } //RENDERING
 
 
@@ -2464,16 +2608,16 @@ function () {
       } //Affichage des objets opaques
 
 
-      for (var _i = 0; _i < opaques.length; _i++) {
-        this.transforms[opaques[_i].id][0].draw(webGLProgram, activeAttributs, this.transforms[opaques[_i].id][1], false);
+      for (var _i2 = 0; _i2 < opaques.length; _i2++) {
+        this.transforms[opaques[_i2].id][0].draw(webGLProgram, activeAttributs, this.transforms[opaques[_i2].id][1], false);
       } //Affichage des mirroirs
 
 
-      webGLProgram.getContext().disable(webGLProgram.getContext().CULL_FACE);
+      gl.disable(gl.CULL_FACE);
 
-      for (var _i2 = 0; _i2 < mirrors.length; _i2++) {
-        this.transforms[mirrors[_i2].id][0].draw(webGLProgram, activeAttributs, this.transforms[mirrors[_i2].id][1], false);
-      } //Tri des objets transparent (CHANGER LA FORMULE DE TRI VOIR TEST2 QUAND VALIDE)
+      for (var _i3 = 0; _i3 < mirrors.length; _i3++) {
+        this.transforms[mirrors[_i3].id][0].draw(webGLProgram, activeAttributs, this.transforms[mirrors[_i3].id][1], false);
+      } //Tri des objets transparent
 
 
       var that = this;
@@ -2489,11 +2633,11 @@ function () {
         }
       }); //Affichage des objets transparents
 
-      for (var _i3 = 0; _i3 < transparents.length; _i3++) {
-        this.transforms[transparents[_i3].id][0].draw(webGLProgram, activeAttributs, this.transforms[transparents[_i3].id][1], true);
+      for (var _i4 = 0; _i4 < transparents.length; _i4++) {
+        this.transforms[transparents[_i4].id][0].draw(webGLProgram, activeAttributs, this.transforms[transparents[_i4].id][1], true);
       }
 
-      webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE); //Lumieres
+      gl.enable(gl.CULL_FACE); //Lumieres
 
       for (var n in this.scene.ambientLights) {
         this.scene.ambientLights[n].render(webGLProgram, n);
@@ -2545,11 +2689,6 @@ function () {
       this.initUser = func;
     }
   }, {
-    key: "setInitialisation",
-    value: function setInitialisation(bool) {
-      this.init = bool;
-    }
-  }, {
     key: "setResetConfigAtEnd",
     value: function setResetConfigAtEnd(bool) {
       this.resetConfigAtEnd = bool;
@@ -2569,32 +2708,6 @@ function () {
     key: "getScissor",
     value: function getScissor() {
       return this.scissor;
-    }
-  }, {
-    key: "_init",
-    value: function _init(webGLProgram) {
-      var gl = webGLProgram.getContext();
-
-      if (this.scissor != null) {
-        gl.enable(gl.SCISSOR_TEST);
-        gl.scissor(this.scissor[0] * webGLProgram.canvas.width, this.scissor[1] * webGLProgram.canvas.height - this.scissor[3] * webGLProgram.canvas.height, this.scissor[2] * webGLProgram.canvas.width, this.scissor[3] * webGLProgram.canvas.height);
-        gl.getParameter(gl.SCISSOR_BOX);
-      } else {
-        gl.disable(gl.SCISSOR_TEST);
-      } //Initialisation
-
-
-      var colors = this.scene.getClearColor();
-      gl.clearColor(colors[0], colors[1], colors[2], colors[3]);
-      gl.enable(gl.DEPTH_TEST);
-      gl.depthFunc(gl.LEQUAL);
-      webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      var attributs = webGLProgram.actualShaderBuilder.getActiveAttributes();
-
-      for (var i = 0; i < attributs.length; i++) {
-        gl.enableVertexAttribArray(webGLProgram.actualShaderBuilder.getPointer(attributs[i]));
-      }
     }
   }, {
     key: "_stateMemory",
@@ -2655,7 +2768,6 @@ function () {
 
       neww.scene = this.scene;
       Object.assign(neww.transforms, this.transforms);
-      neww.init = this.init;
       neww.resetConfigAtEnd = this.resetConfigAtEnd;
       neww.memory = [];
       neww.viewport = this.viewport.slice();
@@ -2919,6 +3031,13 @@ function () {
         }
 
         this.renderers[i].render(webGLProgram);
+      }
+    }
+  }, {
+    key: "renderTextures",
+    value: function renderTextures(webGLProgram) {
+      for (var i = 0; i < this.renderers.length; i++) {
+        this.renderers[i].renderTextures(webGLProgram);
       }
     }
   }, {
@@ -3801,9 +3920,7 @@ function (_Texture) {
     _this.webGLProgram = webGLProgram;
     _this.gl = webGLProgram.getContext();
     _this.texture = _this.gl.createTexture();
-    _this.renderer = renderer;
-
-    _this.renderer.setInitialisation(false);
+    _this.renderer = renderer; //this.renderer.setInitialisation(false);
 
     _this.renderer.setResetConfigAtEnd(true);
 
@@ -3812,12 +3929,20 @@ function (_Texture) {
 
   _createClass(FrameTexture, [{
     key: "update",
-    value: function update(width, height) {
-      var w = 256;
-      var h = 256; //Bind texture
+    value: function update(object) {
+      var viewPortDimensions = {};
+
+      if (typeof object.getTextureDimensions == "function") {
+        var dims = object.getTextureDimensions();
+        viewPortDimensions = {
+          "width": dims[0] / dims[1] * 255,
+          "height": dims[1] / dims[0] * 255
+        };
+      } //Bind texture
+
 
       this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
-      this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, w, h, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
+      this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, viewPortDimensions.width, viewPortDimensions.height, 0, this.gl.RGBA, this.gl.UNSIGNED_BYTE, null);
       this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
       this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
       this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR); //FrameBuffer
@@ -3828,7 +3953,7 @@ function (_Texture) {
 
       this.gl.framebufferTexture2D(this.gl.FRAMEBUFFER, this.gl.COLOR_ATTACHMENT0, this.gl.TEXTURE_2D, this.texture, 0); //RENDER
 
-      this.renderer.render(this.webGLProgram);
+      this.renderer.render(this.webGLProgram, [viewPortDimensions.width, viewPortDimensions.height]);
       this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
     }
   }, {
@@ -3997,8 +4122,8 @@ function (_Texture) {
       planeVec1 = Utils.newVec4(vecPosition, planeVec1);
       planeVec2 = Utils.newVec4(vecPosition, planeVec2);
       var newScene = this.webGLProgram.getScene().clone([mirrorObject]);
-      var renderer = new Renderer(newScene);
-      renderer.setInitialisation(false);
+      var renderer = new Renderer(newScene); // renderer.setInitialisation(false);
+
       renderer.setResetConfigAtEnd(true);
       renderer.disableObjectStepUpAnimation();
       renderer.disableLightStepUpAnimation();
@@ -4353,7 +4478,11 @@ function () {
 
 
       for (var i = 0; i < this.scenes.length; i++) {
-        this.scenes[i].render(this);
+        this.scenes[i].renderTextures(this);
+      }
+
+      for (var _i = 0; _i < this.scenes.length; _i++) {
+        this.scenes[_i].render(this);
       } //Next Frame
 
 
@@ -5029,6 +5158,8 @@ module.exports = function () {
   canvas.height = 128;
   var texture1 = program.createCanvasTexture(canvas, function (canvas) {
     var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#FF0000";
+    ctx.fillRect(0, 0, 1000, 1000);
     ctx.fillStyle = "#00FF00";
     ctx.font = "10px Arial";
     ctx.fillText("CANVAS", 20, 40);
@@ -5039,13 +5170,25 @@ module.exports = function () {
   var c1 = new Cube();
   c1.setPosition(0, 0, -0);
   scene2.add3DObject("c1", c1);
-  var t1 = program.createColorTexture(0, 1, 0, 1);
+  c1.setSize(1);
+  var t1 = program.createColorTexture(1, 0, 0, 1);
   c1.addTexture("color", t1);
+  var rotateT = new Rotate(360, [0, 0, 1], 1200);
+  rotateT.setRepeat(true);
+  var rotateT2 = new Rotate(360, [1, 0, 0], 3000);
+  rotateT.setRepeat(true);
+  rotateT.setPosition(-1, 0, 0);
+  rotateT2.setPosition(0, 0, 2);
+  c1.setPosition(1, 0, -2);
+  c1.addMovement(rotateT);
+  c1.addMovement(rotateT2);
+  rotateT.start();
+  rotateT2.start();
   scene2.add3DObject(c1);
   var cameraTexture = new Camera();
   var ambientT = new AmbientLight();
   ambientT.setPower(1.);
-  ambientT.setRGB(1., 0., 1.);
+  ambientT.setRGB(1., 1., 1.);
   scene2.addLight("ambient", ambientT);
   cameraTexture.setType("perspective", {});
   cameraTexture.setPosition(0, 0, 5);
@@ -5102,10 +5245,10 @@ module.exports = function () {
   cube1.addMovement(rotate111);
   cube1.addMovement(rotate1);
   cube1.addMovement(rotate11);
-  cube2.addMovement(rotate2); //cube2.addMovement(rotate22);
-  //cube3.addMovement(rotate3);
-  //cube3.addMovement(rotate33);
-
+  cube2.addMovement(rotate2);
+  cube2.addMovement(rotate22);
+  cube3.addMovement(rotate3);
+  cube3.addMovement(rotate33);
   cube3.addMovement(rotate333);
   scene.setClearColor(0, 0, 0, 1);
   program.setScene(scene); //Carré invisible en haut à droite
@@ -5151,7 +5294,8 @@ module.exports = function () {
   renderTL.setViewPort(0, 0.5, 0.5, 0.5); //affichage des normals
 
   var renderTLNormals = renderTL.clone();
-  renderTLNormals.setInitialisation(false);
+  renderTLNormals.disableClearDepthBuffer();
+  renderTLNormals.disableClearColorBuffer();
   var shader = scene.getShaderBuilder();
   var nShader = shader.clone(); // Normal Shader
 
@@ -5172,7 +5316,7 @@ module.exports = function () {
   }, function (program) {//AFTER
   });
   renderTR.setViewPort(0.5, 0.5, 0.5, 0.5);
-  renderTR.setInitialisation(false);
+  renderTR.disableClearColorBuffer();
   scene.addRenderer(renderTR); //Bottom left
 
   var renderBL = new Renderer(scene, function (program) {
@@ -5181,7 +5325,7 @@ module.exports = function () {
   }, function (program) {//AFTER
   });
   renderBL.setViewPort(0., 0., 0.5, 0.5);
-  renderBL.setInitialisation(false);
+  renderBL.disableClearColorBuffer();
   scene.addRenderer(renderBL); //bottom right
 
   var renderBR = new Renderer(scene, function (program) {
@@ -5192,7 +5336,7 @@ module.exports = function () {
     scene.setCamera("tl");
   });
   renderBR.setViewPort(0.5, 0., 0.5, 0.5);
-  renderBR.setInitialisation(false);
+  renderBR.disableClearColorBuffer();
   scene.addRenderer(renderBR); //ENCADRE A DROITE
 
   var renderer = new Renderer(scene, function (program) {

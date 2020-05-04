@@ -201,7 +201,12 @@ class Scene{
 			}
 			this.renderers[i].render(webGLProgram);
 		}
+	}
 
+	renderTextures(webGLProgram){
+		for(let i = 0 ; i < this.renderers.length ; i++){
+			this.renderers[i].renderTextures(webGLProgram);
+		}
 	}
 
   clone(objectsToRemove){
