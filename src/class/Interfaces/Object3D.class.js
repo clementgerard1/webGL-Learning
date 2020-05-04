@@ -5,6 +5,7 @@ const Scale = require("../Movements/Scale.class.js");
 const Rotate = require("../Movements/Rotate.class.js");
 const LookAt = require("../Movements/LookAt.class.js");
 const Utils = require("../Utils.class");
+const Material = require("../Material.class.js");
 const glmatrix = require("../../../node_modules/gl-matrix/gl-matrix-min.js");
 
 class Object3D{
@@ -15,7 +16,10 @@ class Object3D{
 		this.opacity = 1;
 		this.mirror = false;
 		this.mirrored = 0;
+    this.stepUpAnimation = true;
     this.direction = [0, 0, 1];
+
+    this.material = new Material();
 
 		this.movements = [];
 
@@ -34,6 +38,22 @@ class Object3D{
     this.normals = [];
 
 	}
+
+  getMaterial(){
+    return this.material;
+  }
+
+  setMaterial(material){
+    this.material = material;
+  }
+
+  enableStepUpAnimation(){
+    this.stepUpAnimation = true;
+  }
+
+  disableStepUpAnimation(){
+    this.stepUpAnimation = false;
+  }
 
 	addMovement(name, movement){
     if(typeof name != "string"){
@@ -143,8 +163,9 @@ class Object3D{
         //base = matrice héritéé d'un groupe d'objet
 
         let processedMatrix;
-        const stepUp = (this.mirrored == 0);
+        const stepUp = this.stepUpAnimation;
         
+
         if(base == null || typeof base == "undefined"){
             processedMatrix = glmatrix.mat4.create();
         }else{

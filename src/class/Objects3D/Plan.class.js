@@ -2,6 +2,8 @@ const Object3D = require("../Interfaces/Object3D.class.js");
 const glmatrix = require("../../../node_modules/gl-matrix/gl-matrix-min.js");
 const MirrorTexture = require("../Textures/MirrorTexture.class.js");
 const ColorTexture = require("../Textures/ColorTexture.class");
+const CanvasTexture = require("../Textures/CanvasTexture.class");
+const FrameTexture = require("../Textures/FrameTexture.class");
 const Scale = require("../Movements/Scale.class.js");
 const Translate = require("../Movements/Translate.class.js");
 const Rotate = require("../Movements/Rotate.class.js");
@@ -60,6 +62,11 @@ class Plan extends Object3D {
         const numTexture = 0;
         for(let text in that.textures){
             if(!(that.textures[text] instanceof MirrorTexture)){
+
+                if(that.textures[text] instanceof CanvasTexture || that.textures[text] instanceof FrameTexture){
+                  that.textures[text].update();
+                }
+
                 webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
                 webGLProgram.getContext().bindTexture(webGLProgram.getContext().TEXTURE_2D, that.textures[text].getTexture());
                 webGLProgram.getContext().uniform1i(webGLProgram.getShaderBuilder().getPointer("texture"), false, 0);

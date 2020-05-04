@@ -18,6 +18,7 @@ class SpotLight extends Light{
 		this.movements = [];
 		this.innerLimit = Utils.fromDegToDotSpace(30);
 		this.outerLimit = Utils.fromDegToDotSpace(50);
+		this.stepUpAnimation = true;
 
 		this.position = [0, 0, 0];
     this.positionTranslate = new Translate(this.position, 0, function(){});
@@ -25,6 +26,14 @@ class SpotLight extends Light{
     this.positionTranslate.setTranslationVec(0, 0, 0);
     this.addMovement("position", this.positionTranslate);
     this.positionTranslate.start();
+	}
+
+	enableStepUpAnimation(){
+		this.stepUpAnimation = true;
+	}
+
+	disableStepUpAnimation(){
+		this.stepUpAnimation = false;
 	}
 
 	setPosition(x, y, z){
@@ -42,6 +51,10 @@ class SpotLight extends Light{
 	}
 
 	addMovement(name, movement){
+			if(typeof name != "string"){
+	      movement = name;
+	      name = "movement" + Object.keys(this.movements).length;
+	    }
       this.movements[name] = movement;
   }
 
@@ -68,7 +81,7 @@ class SpotLight extends Light{
 		//Local transformation
 
     let processedMatrix = glmatrix.mat4.create();
-    let stepUp = true;
+    let stepUp = this.stepUpAnimation;
 
     //Translate
     for(let move in this.movements){

@@ -3,6 +3,7 @@ const ColorTexture = require("./Textures/ColorTexture.class.js");
 const ImageTexture = require("./Textures/ImageTexture.class.js");
 const MirrorTexture = require("./Textures/MirrorTexture.class.js");
 const FrameTexture = require("./Textures/FrameTexture.class.js");
+const CanvasTexture = require("./Textures/CanvasTexture.class.js");
 
 class WebGLProgram{
 
@@ -43,15 +44,6 @@ class WebGLProgram{
 
 	}
 
-	// setTextureRenderer(bool){
-	// 	this.actualShaderBuilder.setTextureRenderer(bool);
-	// 	this.updateProgram();
-	// }
-
-	createFrameTexture(){
-
-	}
-
 	setFPSDisplayTime(fpsDisplayTime){
 		this.fpsDisplay = fpsDisplayTime;
 	}
@@ -76,6 +68,16 @@ class WebGLProgram{
 	disableFPSCounter(){
 		this.fpsCallback = null;
 		this.fpsLast = null;
+	}
+
+	createFrameTexture(renderer){
+		const texture = new FrameTexture(this, renderer);
+		return texture;
+	}
+
+	createCanvasTexture(canvas, func){
+		const texture = new CanvasTexture(this, canvas, func);
+		return texture;
 	}
 
 	createImageTexture(src){

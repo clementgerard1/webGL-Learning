@@ -13,6 +13,7 @@ class Camera extends Movable{
 		super();
 
 		this.movements = [];
+		this.stepUpAnimation = true;
 
 		//Position
 		this.position = [0, 0, 0];
@@ -34,6 +35,14 @@ class Camera extends Movable{
 			"far" : 100,
 			"near" : 0.1,
 		};
+	}
+
+	enableStepUpAnimation(){
+		this.stepUpAnimation = true;
+	}
+
+	disableStepUpAnimation(){
+		this.stepUpAnimation = false;
 	}
 
 	addMovement(name, movement){
@@ -87,7 +96,7 @@ class Camera extends Movable{
         //base = matrice héritéé d'un groupe d'objet
 
         let processedMatrix = glmatrix.mat4.create();
-        const stepUp = true;
+        const stepUp = this.stepUpAnimation;
 
         //Translate
         for(let move in this.movements){

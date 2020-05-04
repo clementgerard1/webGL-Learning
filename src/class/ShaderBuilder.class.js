@@ -566,6 +566,9 @@ class ShaderBuilder{
 			}
 		}
 
+		//Light functions
+		//this.fragmentSrc += 
+
 		this.fragmentSrc += "void main() {";
 			//Color
 			//this.fragmentSrc += "if(" + this.infos["depthTexture"].name + " == false){"

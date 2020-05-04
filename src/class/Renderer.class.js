@@ -9,6 +9,10 @@ class Renderer{
 		this.memory = [];
 		this.viewport = [0, 0, 1, 1];
 
+		this.stepUpObjectAnimation = true;
+		this.stepUpCameraAnimation = true;
+		this.stepUpLightAnimation = true;
+
 		if(typeof initFunc == "undefined"){
 			this.initUser = function(program){};
 		}else{
@@ -22,6 +26,30 @@ class Renderer{
 		}
 	}
 
+	enableObjectStepUpAnimation(){
+		this.stepUpObjectAnimation = true;
+	}
+
+	disableObjectStepUpAnimation(){
+		this.stepUpObjectAnimation = false;
+	}
+
+	enableCameraStepUpAnimation(){
+		this.stepUpCameraAnimation = true;
+	}
+
+	disableCameraStepUpAnimation(){
+		this.stepUpCameraAnimation = false;
+	}
+
+	enableLightStepUpAnimation(){
+		this.stepUpLightAnimation = true;
+	}
+
+	disableLightStepUpAnimation(){
+		this.stepUpLightAnimation = false;
+	}
+
 	setInitUserFunction(func){
 		this.initUser = func;
 	}
@@ -31,6 +59,8 @@ class Renderer{
 	}
 
 	render(webGLProgram){
+
+		this.memory = [];
 
 		this.initUser(webGLProgram);
 
@@ -43,7 +73,6 @@ class Renderer{
 		} else if(webGLProgram.actualShaderBuilder.needRebuild()){
 			webGLProgram.actualShaderBuilder.buildShaderProgram(webGLProgram.getContext(), this.scene);
 		}
-
 		webGLProgram.getContext().useProgram(webGLProgram.actualShaderBuilder.getShaderProgram());
 
 		//Création des buffers
@@ -55,11 +84,14 @@ class Renderer{
 		}
 
 		webGLProgram.getContext().viewport(this.viewport[0] * webGLProgram.canvas.width, this.viewport[1] * webGLProgram.canvas.height, this.viewport[2] * webGLProgram.canvas.width, this.viewport[3] * webGLProgram.canvas.height);
-		//Shader uniforms
-		//gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("depthTexture"), false, 0);
-		webGLProgram.getContext().uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix((webGLProgram.getContext().canvas.clientWidth * this.viewport[2]) / (webGLProgram.getContext().canvas.clientHeight * this.viewport[3]) ));
 
-		this.memory = [];
+		if(this.stepUpCameraAnimation){
+			this.scene.getCamera().enableStepUpAnimation();
+		}else{
+			this.scene.getCamera().disableStepUpAnimation();
+		}
+
+		webGLProgram.getContext().uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix((webGLProgram.getContext().canvas.clientWidth * this.viewport[2]) / (webGLProgram.getContext().canvas.clientHeight * this.viewport[3]) ));
 
 		if(this.resetConfigAtEnd){
 			this._stateMemory(webGLProgram);
@@ -96,6 +128,12 @@ class Renderer{
 		this.transforms = [];
 		const activeAttributs = webGLProgram.getShaderBuilder().getActiveAttributes();
 		for(let obj in this.scene.objects){
+			//StepUp setting
+			if(this.stepUpObjectAnimation){
+				this.scene.objects[obj].enableStepUpAnimation();
+			}else{
+				this.scene.objects[obj].disableStepUpAnimation();
+			}
 			this.scene.objects[obj].render(this.transforms);
 		}
 
@@ -133,10 +171,28 @@ class Renderer{
 		webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
 
 		//Lumieres
-		for(let n in this.scene.ambientLights) this.scene.ambientLights[n].render(webGLProgram, n);
-		for(let n in this.scene.directionalLights) this.scene.directionalLights[n].render(webGLProgram, n);
-		for(let n in this.scene.pointLights) this.scene.pointLights[n].render(webGLProgram, n);
-		for(let n in this.scene.spotLights) this.scene.spotLights[n].render(webGLProgram, n);
+		for(let n in this.scene.ambientLights){
+			this.scene.ambientLights[n].render(webGLProgram, n);
+		}
+		for(let n in this.scene.directionalLights){
+			this.scene.directionalLights[n].render(webGLProgram, n);
+		}
+		for(let n in this.scene.pointLights){
+			if(this.stepUpLightAnimation){
+				this.scene.pointLights[n].enableStepUpAnimation();
+			}else{
+				this.scene.pointLights[n].disableStepUpAnimation();
+			}
+			this.scene.pointLights[n].render(webGLProgram, n);
+		}
+		for(let n in this.scene.spotLights){
+			if(this.stepUpLightAnimation){
+				this.scene.spotLights[n].enableStepUpAnimation();
+			}else{
+				this.scene.spotLights[n].disableStepUpAnimation();
+			}
+			this.scene.spotLights[n].render(webGLProgram, n);
+		}
 
 
 		if(this.resetConfigAtEnd){

@@ -15,7 +15,6 @@ class Movement{
 
 	setPowSpeed(pow){
 		this.powSpeed = pow;
-		console.log(this.powSpeed);
 	}
 
 	setRepeat(bool){

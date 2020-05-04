@@ -14,6 +14,7 @@ class PointLight extends Light{
 		this.rgb;
 		this.position = [0, 0, 0];
 		this.movements = [];
+		this.stepUpAnimation = true;
 
 		this.position = [0, 0, 0];
     this.positionTranslate = new Translate(this.position, 0, function(){});
@@ -28,9 +29,19 @@ class PointLight extends Light{
 		this.positionTranslate.setTranslationVec(x, y, z);
 	}
 
+	enableStepUpAnimation(){
+		this.stepUpAnimation = true;
+	}
 
+	disableStepUpAnimation(){
+		this.stepUpAnimation = false;
+	}
 
 	addMovement(name, movement){
+			if(typeof name != "string"){
+	      movement = name;
+	      name = "movement" + Object.keys(this.movements).length;
+	    }
       this.movements[name] = movement;
   }
 
@@ -58,7 +69,7 @@ class PointLight extends Light{
 		//Local transformation
 
     let processedMatrix = glmatrix.mat4.create();
-    let stepUp = true;
+    let stepUp = this.stepUpAnimation;
 
     //Translate
     for(let move in this.movements){

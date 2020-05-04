@@ -3,6 +3,8 @@ const glmatrix = require("../../../node_modules/gl-matrix/gl-matrix-min.js");
 const Utils = require("../Utils.class.js");
 const MirrorTexture = require("../Textures/MirrorTexture.class");
 const ColorTexture = require("../Textures/ColorTexture.class");
+const CanvasTexture = require("../Textures/CanvasTexture.class");
+const FrameTexture = require("../Textures/FrameTexture.class");
 const Translate = require("../Movements/Translate.class.js");
 const Scale = require("../Movements/Scale.class.js");
 const Rotate = require("../Movements/Rotate.class.js");
@@ -156,6 +158,14 @@ class Cube extends Object3D {
         const numTexture = 0;
         for(let text in that.textures){
             if(!(that.textures[text] instanceof MirrorTexture)){
+
+                if(that.textures[text] instanceof CanvasTexture){
+                  that.textures[text].update();
+                }
+                if(that.textures[text] instanceof FrameTexture){
+                  that.textures[text].update();  
+                }
+
                 webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
                 webGLProgram.getContext().bindTexture(webGLProgram.getContext().TEXTURE_2D, that.textures[text].getTexture());
                 webGLProgram.getContext().uniform1i(webGLProgram.getShaderBuilder().getPointer("texture"), false, 0);

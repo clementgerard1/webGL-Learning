@@ -20,10 +20,42 @@ module.exports = function(){
 
 	const scene = new Scene();
 
+	//Canvas Texture
+	const canvas = document.createElement('canvas');
+	canvas.width = 128;
+	canvas.height = 128;
+	const texture1 = program.createCanvasTexture(canvas, function(canvas){
+		const ctx = canvas.getContext("2d");
+		ctx.fillStyle = "#00FF00";
+		ctx.font = "10px Arial";
+		ctx.fillText("CANVAS", 20, 40);
+		ctx.fillText("TEXTURE", 20, 70);
+	});
+
+	//Frame Texture
+	const scene2 = new Scene();
+	const c1 = new Cube();	c1.setPosition(0, 0, -0); scene2.add3DObject("c1", c1); const t1 = program.createColorTexture(0, 1, 0, 1); c1.addTexture("color", t1);
+	scene2.add3DObject(c1);
+	const cameraTexture = new Camera();
+	const ambientT = new AmbientLight();
+	ambientT.setPower(1.);
+	ambientT.setRGB(1., 0., 1.);
+	scene2.addLight("ambient", ambientT);
+
+	cameraTexture.setType("perspective", {
+
+	});
+	cameraTexture.setPosition(0, 0, 5);
+	scene2.addCamera(cameraTexture);
+
+	const textureRenderer = new Renderer(scene2);
+	scene2.setClearColor(1, 1, 0, 1);
+	const texture3 = program.createFrameTexture(textureRenderer); 
+
 	//Cubes
-	const cube1 = new Cube(); cube1.setPosition(-1, 0, -1); cube1.setSize(1);scene.add3DObject("cube1", cube1); const texture1 = program.createColorTexture(0, 0, 1, 1); cube1.addTexture("color", texture1);
+	const cube1 = new Cube(); cube1.setPosition(-1, 0, -1); cube1.setSize(1);scene.add3DObject("cube1", cube1); cube1.addTexture("color", texture1);
 	const cube2 = new Cube();	cube2.setPosition(0, 0, -0); scene.add3DObject("cube2", cube2); const texture2 = program.createColorTexture(0, 1, 0, 1); cube2.addTexture("color", texture2);
-	const cube3 = new Cube();	cube3.setPosition(1, 0, -1); scene.add3DObject("cube3", cube3); const texture3 = program.createColorTexture(1, 0, 0, 1); cube3.addTexture("color", texture3);
+	const cube3 = new Cube();	cube3.setPosition(1, 0, -1); scene.add3DObject("cube3", cube3); cube3.addTexture("color", texture3);
 
 	const rotate1 = new Rotate(360, [0,1,0], 3000); rotate1.setRepeat(true); //rotate1.setPowSpeed(0.7);
 	const rotate11 = new Rotate(360, [1,0,0], 3000); rotate11.setRepeat(true); rotate11.setPowSpeed(1);

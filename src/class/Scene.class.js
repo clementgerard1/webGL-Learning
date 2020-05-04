@@ -66,8 +66,8 @@ class Scene{
 	addCamera(name, camera){
 
 		if(typeof name != "string"){
-      movement = name;
-      name = "movement" + Object.keys(this.cameras).length;
+      camera = name;
+      name = "camera" + Object.keys(this.cameras).length;
     }
 
 		this.cameras[name] = camera;
@@ -95,8 +95,8 @@ class Scene{
 	addLight(name, light){
 
 		if(typeof name != "string"){
-      movement = name;
-      name = "movement" + Object.keys(this.lights).length;
+      light = name;
+      name = "light" + Object.keys(this.lights).length;
     }
 
 		if(light instanceof AmbientLight){
@@ -161,8 +161,8 @@ class Scene{
 	add3DObject(name, object){
 
 		if(typeof name != "string"){
-      movement = name;
-      name = "movement" + Object.keys(this.objects).length;
+      object = name;
+      name = "object" + Object.keys(this.objects).length;
     }
 
 		this.objects[name] = object;
@@ -195,7 +195,9 @@ class Scene{
 	render(webGLProgram){
 		for(let i = 0 ; i < this.renderers.length ; i++){
 			if(i > 0){
-				//Add stepUp = false
+				this.renderers[i].disableObjectStepUpAnimation();
+				this.renderers[i].disableLightStepUpAnimation();
+				this.renderers[i].disableCameraStepUpAnimation();
 			}
 			this.renderers[i].render(webGLProgram);
 		}
