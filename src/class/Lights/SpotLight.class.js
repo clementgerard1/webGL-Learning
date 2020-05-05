@@ -12,13 +12,13 @@ class SpotLight extends Light{
 
 	constructor(){
 		super();
-		this.power = 1.
-		this.rgb;
 		this.position = [0, 0, 0];
 		this.movements = [];
-		this.innerLimit = Utils.fromDegToDotSpace(30);
-		this.outerLimit = Utils.fromDegToDotSpace(50);
+		this.innerLimit = Utils.fromDegToDotSpace(10);
+		this.outerLimit = Utils.fromDegToDotSpace(30);
 		this.stepUpAnimation = true;
+
+		this.dissipation = [1., 1., 1.]; // Disspation constante, linéaire, quadratique
 
 		this.position = [0, 0, 0];
     this.positionTranslate = new Translate(this.position, 0, function(){});
@@ -26,6 +26,10 @@ class SpotLight extends Light{
     this.positionTranslate.setTranslationVec(0, 0, 0);
     this.addMovement("position", this.positionTranslate);
     this.positionTranslate.start();
+	}
+
+	setDissipation(cons, lin, quad){
+		this.dissipation = [cons, lin, quad];
 	}
 
 	enableStepUpAnimation(){
@@ -62,21 +66,6 @@ class SpotLight extends Light{
       delete this.movements[name];
   }
 
-	setPower(f){
-		this.power = f;
-	}
-
-	setRGB(r, g, b){
-		this.rgb = [r, g, b];
-	}
-	getRGB(){
-		return this.rgb;
-	}
-
-	getPower(){
-		return this.power;
-	}
-
 	render(webGLProgram, name){
 		//Local transformation
 
@@ -112,14 +101,9 @@ class SpotLight extends Light{
     glmatrix.vec3.transformMat4(position, position, processedMatrix);
 
     const direction = glmatrix.vec3.create();
-    glmatrix.vec3.transformMat4(direction, this.vec, processedMatrix);
-
-
-		const rgb = [];
-		for(let i = 0 ; i < this.rgb.length ; i++){
-			rgb[i] = this.rgb[i] * this.power;
-		}
-
+    const processedMatrixWithoutTranslate = glmatrix.mat3.create();
+    glmatrix.mat3.fromMat4(processedMatrixWithoutTranslate, processedMatrix);
+    glmatrix.vec3.transformMat3(direction, this.vec, processedMatrixWithoutTranslate);
 		//Limits
 		webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_iLimit"), this.innerLimit);
 		webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_oLimit"), this.outerLimit);
@@ -127,7 +111,29 @@ class SpotLight extends Light{
 		//Vectors
 		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_direction"), direction);
 		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_position"), position);
-		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_color"), rgb);
+
+		const ambientRGB = [];
+		for(let i = 0 ; i < this.ambient.length ; i++){
+			ambientRGB[i] = this.ambient[i] * this.aPower;
+		}
+		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_ambientColor"), ambientRGB);
+
+		const diffuseRGB = [];
+		for(let i = 0 ; i < this.diffuse.length ; i++){
+			diffuseRGB[i] = this.diffuse[i] * this.dPower;
+		}
+		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_diffuseColor"), diffuseRGB);
+
+		const specularRGB = [];
+		for(let i = 0 ; i < this.specular.length ; i++){
+			specularRGB[i] = this.specular[i] * this.sPower;
+		}
+
+		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_specularColor"), specularRGB);
+
+		webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_constDissip"), this.dissipation[0]);
+		webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_linDissip"), this.dissipation[1]);
+		webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_quadDissip"), this.dissipation[2]);
 	}
 
 	getVertexShaderPreCode(infos){
@@ -146,12 +152,7 @@ class SpotLight extends Light{
 	}
 
 	getFragmentShaderMainCode(infos){
-		let str = "highp float " + infos.name + "var = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_dir));";
-		str += "if(" + infos.name + "var > " + infos.iLimit.name + "){ " + infos.name + "var = 1.0;}else ";
-		str += "if(" + infos.name + "var < " + infos.oLimit.name + "){ " + infos.name + "var = 0.0;}else "; 
-		str += "{" + infos.name + "var =(" + infos.name + "var - " + infos.oLimit.name + ") / (" + infos.iLimit.name + "-" + infos.oLimit.name + ");}"; 
-		str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb *  pow(max(" + infos.name + "var, 0.0), 10.0), gl_FragColor.a);";
-		return str;
+		return "gl_FragColor.rgb += spotLight(" + infos.normal.varyingName + ".rgb, " + infos.iLimit.name + ", " + infos.oLimit.name + ", " + infos.direction.name + ", " + infos.constDissip.name + ", " + infos.linDissip.name + ", " + infos.quadDissip.name + ", v" +  infos.name + "_dir, viewVec, " + infos.ambient.name + ", materialAmbient.rgb," + infos.diffuse.name + ", materialDiffuse.rgb," + infos.specular.name + ", materialSpecular.rgb, materialShininess);";
 	}
 
 }

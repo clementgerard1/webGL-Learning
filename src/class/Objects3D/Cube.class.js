@@ -11,8 +11,8 @@ const Rotate = require("../Movements/Rotate.class.js");
 
 class Cube extends Object3D {
 
-	constructor(){
-		super();
+	constructor(material){
+		super(material);
         this.colors = [
             0., 0., 1., 1., //Face avant
             0., 0., 1., 1.,
@@ -132,7 +132,7 @@ class Cube extends Object3D {
             "normal" : this._sendVertexNormals,
 		}
 
-        this.normals = super.generateNormals();
+        this.material.generateNormals(this);
 	}
 
 	setSize(s){
@@ -155,57 +155,24 @@ class Cube extends Object3D {
 	}
 
     _sendTextureCoordonnees(webGLProgram, that){
-        const numTexture = 0;
-        for(let text in that.textures){
-            if(!(that.textures[text] instanceof MirrorTexture)){
 
-                if(that.textures[text] instanceof CanvasTexture){
-                  that.textures[text].update();
-                }
+        //Render textures
+        that.material.render(webGLProgram);
 
-                webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
-                webGLProgram.getContext().bindTexture(webGLProgram.getContext().TEXTURE_2D, that.textures[text].getTexture());
-                webGLProgram.getContext().uniform1i(webGLProgram.getShaderBuilder().getPointer("texture"), false, 0);
-
-
-                webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("textureCoordonnees"));
-                webGLProgram.getContext().vertexAttribPointer(
-                    webGLProgram.getShaderBuilder().getPointer("textureCoordonnees"),
-                    2,
-                    webGLProgram.getContext().FLOAT,
-                    false,
-                    0,
-                    0
-                );
-
-                //Insérer les données
-                webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.textureCoordonnees), webGLProgram.getContext().STATIC_DRAW);
-            }
-        }
-
-    }
-
-	_sendVertexPosition(webGLProgram, that){
-
-		//Initialisation
-        webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("position"));
+        webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("textureCoordonnees"));
         webGLProgram.getContext().vertexAttribPointer(
-            webGLProgram.getShaderBuilder().getPointer("position"),
-            3,
+            webGLProgram.getShaderBuilder().getPointer("textureCoordonnees"),
+            2,
             webGLProgram.getContext().FLOAT,
             false,
             0,
             0
         );
 
-        if(webGLProgram.getShaderBuilder().getMode() != "normal"){
+        //Insérer les données
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.textureCoordonnees), webGLProgram.getContext().STATIC_DRAW);
 
-           webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.positions), webGLProgram.getContext().STATIC_DRAW);
-        }else{
-            const positions = super.generateNormalPositions(that);
-            webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(positions), webGLProgram.getContext().STATIC_DRAW);
-        }
-	}
+    }
 
 	_sendVertexColor(webGLProgram, that){
 		//Initialisation
@@ -222,6 +189,28 @@ class Cube extends Object3D {
         webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.colors), webGLProgram.getContext().STATIC_DRAW);
     }
 
+   _sendVertexPosition(webGLProgram, that){
+
+        //Initialisation
+        webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("position"));
+        webGLProgram.getContext().vertexAttribPointer(
+            webGLProgram.getShaderBuilder().getPointer("position"),
+            3,
+            webGLProgram.getContext().FLOAT,
+            false,
+            0,
+            0
+        );
+
+        if(webGLProgram.getShaderBuilder().getMode() != "normal"){
+
+           webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.positions), webGLProgram.getContext().STATIC_DRAW);
+        }else{
+            const positions = that.material.generateNormalPositions(that);
+            webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(positions), webGLProgram.getContext().STATIC_DRAW);
+        }
+    }
+
     _sendVertexNormals(webGLProgram, that){
         //Initialisation
         webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("normal"));
@@ -233,7 +222,7 @@ class Cube extends Object3D {
             0,
             0
         );
-        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.normals), webGLProgram.getContext().STATIC_DRAW);
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.material.normals), webGLProgram.getContext().STATIC_DRAW);
     }
 
     draw(webGLProgram, attributs, processedMatrix, orderTriangles){
@@ -264,7 +253,7 @@ class Cube extends Object3D {
         }else if(webGLProgram.getShaderBuilder().getMode() == "normal"){
 
             webGLProgram.getContext().uniform4fv(webGLProgram.getShaderBuilder().getPointer("normalColor"), webGLProgram.getShaderBuilder().getNormalColor());
-            webGLProgram.getContext().drawArrays(webGLProgram.getContext().LINES, 0, (this.normals.length * 2) / 3);
+            webGLProgram.getContext().drawArrays(webGLProgram.getContext().LINES, 0, (this.material.normals.length * 2) / 3);
         }else{
             webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW);
             //Draw
@@ -287,7 +276,6 @@ class Cube extends Object3D {
         neww.position = this.position.slice();
         neww.colors = this.colors.slice();
         Object.assign(neww.movements, this.movements);
-        Object.assign(neww.textures, this.textures);
         neww.indexes = this.indexes.slice();
         neww.textureCoordonnees = this.textureCoordonnees.slice();
         Object.assign(neww.bufferFunctions, this.bufferFunctions);
@@ -295,7 +283,7 @@ class Cube extends Object3D {
     }
 
     getTextures(){
-        return this.textures;
+        return this.material.getTextures();
     }
 
     getTextureDimensions(){

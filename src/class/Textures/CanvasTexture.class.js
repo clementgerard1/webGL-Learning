@@ -21,7 +21,6 @@ class CanvasTexture extends Texture{
 		ctx.translate(0, this.canvas.height);
 		ctx.scale(1, -1);
 		this.drawFunction(this.canvas);
-
 		this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.canvas);
 		if ((this.canvas.width & (this.canvas.width - 1)) == 0 && (this.canvas.height & (this.canvas.height - 1)) == 0) {
        this.gl.generateMipmap(this.gl.TEXTURE_2D);

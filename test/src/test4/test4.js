@@ -54,13 +54,13 @@ module.exports = function(){
 
 	//Lumières
 	const ambient = new AmbientLight();
-	ambient.setPower(1);
-	ambient.setRGB(1, 1, 1);
+	ambient.setPower([0.1, 0, 0]);
+	ambient.setRGB(0.3, 0.6, 0.2);
 
 	const directional = new DirectionalLight();
-	directional.setPower(1);
+	directional.setPower([0, 1, 1]);
 	directional.setRGB(1, 1, 1);
-	directional.setDirection(-2, -2, -1);
+	directional.setDirection(-1, 0, -1);
 
 	scene.addLight("ambiant", ambient);
 	scene.addLight("directional", directional);

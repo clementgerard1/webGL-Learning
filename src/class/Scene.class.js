@@ -28,6 +28,10 @@ class Scene{
 		return this.activeCamera;
 	}
 
+	getNbTextures(){
+		return 0;
+	}
+
 	addRenderer(renderer, i){
 
 		if(typeof i == "undefined"){

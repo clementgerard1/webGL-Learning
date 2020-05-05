@@ -16,6 +16,8 @@ class PointLight extends Light{
 		this.movements = [];
 		this.stepUpAnimation = true;
 
+		this.dissipation = [1., 1., 1.]; // Disspation constante, linéaire, quadratique
+
 		this.position = [0, 0, 0];
     this.positionTranslate = new Translate(this.position, 0, function(){});
     this.positionTranslate.setPosition(0, 0, 0);
@@ -27,6 +29,10 @@ class PointLight extends Light{
 	setPosition(x, y, z){
 		this.position = [x, y, z];
 		this.positionTranslate.setTranslationVec(x, y, z);
+	}
+
+	setDissipation(cons, lin, quad){
+		this.dissipation = [cons, lin, quad];
 	}
 
 	enableStepUpAnimation(){
@@ -49,25 +55,9 @@ class PointLight extends Light{
       delete this.movements[name];
   }
 
-	setPower(f){
-		this.power = f;
-	}
-
-	setRGB(r, g, b){
-		this.rgb = [r, g, b];
-	}
-	getRGB(){
-		return this.rgb;
-	}
-
-	getPower(){
-		return this.power;
-	}
-
 	render(webGLProgram, name){
 
 		//Local transformation
-
     let processedMatrix = glmatrix.mat4.create();
     let stepUp = this.stepUpAnimation;
 
@@ -100,12 +90,31 @@ class PointLight extends Light{
     glmatrix.vec3.transformMat4(position, position, processedMatrix);
 
 
-		const rgb = [];
-		for(let i = 0 ; i < this.rgb.length ; i++){
-			rgb[i] = this.rgb[i] * this.power;
-		}
 		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_position"), position);
-		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_color"), rgb);
+		
+		const ambientRGB = [];
+		for(let i = 0 ; i < this.ambient.length ; i++){
+			ambientRGB[i] = this.ambient[i] * this.aPower;
+		}
+		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_ambientColor"), ambientRGB);
+
+		const diffuseRGB = [];
+		for(let i = 0 ; i < this.diffuse.length ; i++){
+			diffuseRGB[i] = this.diffuse[i] * this.dPower;
+		}
+		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_diffuseColor"), diffuseRGB);
+
+		const specularRGB = [];
+		for(let i = 0 ; i < this.specular.length ; i++){
+			specularRGB[i] = this.specular[i] * this.sPower;
+		}
+
+		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_specularColor"), specularRGB);
+
+		webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_constDissip"), this.dissipation[0]);
+		webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_linDissip"), this.dissipation[1]);
+		webGLProgram.getContext().uniform1f(webGLProgram.actualShaderBuilder.getPointer(name + "_quadDissip"), this.dissipation[2]);
+
 	}
 
 	getVertexShaderPreCode(infos){
@@ -125,9 +134,7 @@ class PointLight extends Light{
 	}
 
 	getFragmentShaderMainCode(infos){
-		let str = "highp float " + infos.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), normalize(v" + infos.name + "_dir));";
-		str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb * pow(max(" + infos.name + "power, 0.0), 10.0), gl_FragColor.a);";
-		return str;
+		return "gl_FragColor.rgb += pointLight(" + infos.normal.varyingName + ".rgb, " + infos.constDissip.name + ", " + infos.linDissip.name + ", " + infos.quadDissip.name + ", v" +  infos.name + "_dir, viewVec, " + infos.ambient.name + ", materialAmbient.rgb," + infos.diffuse.name + ", materialDiffuse.rgb," + infos.specular.name + ", materialSpecular.rgb, materialShininess);";
 	}
 
 }

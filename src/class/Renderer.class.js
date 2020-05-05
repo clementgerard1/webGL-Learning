@@ -148,7 +148,9 @@ class Renderer{
 			webGLProgram.actualShaderBuilder = this.scene.getShaderBuilder();
 		}
 
-		if(!webGLProgram.actualShaderBuilder.checkLights(this.scene.getNbAmbientLights(), this.scene.getNbDirectionalLights(), this.scene.getNbPointLights(), this.scene.getNbSpotLights())){
+		if(!webGLProgram.actualShaderBuilder.checkLights(this.scene.getNbAmbientLights(), this.scene.getNbDirectionalLights(), this.scene.getNbPointLights(), this.scene.getNbSpotLights())
+				&& !webGLProgram.actualShaderBuilder.checkTextures(this.scene.getNbTextures())
+			){
 			webGLProgram.actualShaderBuilder.buildShaderProgram(gl, this.scene);
 		} else if(webGLProgram.actualShaderBuilder.needRebuild()){
 			webGLProgram.actualShaderBuilder.buildShaderProgram(gl, this.scene);
@@ -173,7 +175,15 @@ class Renderer{
 		}else{
 			this.scene.getCamera().disableStepUpAnimation();
 		}
+
+		//Camera Matrix
 		gl.uniformMatrix4fv(webGLProgram.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix((viewPortDimensions.width * this.viewport[2]) / (viewPortDimensions.height * this.viewport[3]) ));
+
+		//Camera Position
+		const camPos = webGLProgram.actualShaderBuilder.getPointer("cameraPosition");
+		if(camPos != null){
+			gl.uniform3fv(camPos, this.scene.getCamera().getPosition());
+		}
 
 		if( this.scissor != null){
 			gl.enable(gl.SCISSOR_TEST);
@@ -373,14 +383,6 @@ class Renderer{
 		}else{
 			webGLProgram.getContext().disable(webGLProgram.getContext().CULL_FACE);
 		}
-	}
-
-	enableEvents(){
-
-	}
-
-	disableEvents(){
-		
 	}
 
 	clone(){

@@ -1,6 +1,7 @@
 const MirrorTexture = require("../Textures/MirrorTexture.class");
 const ColorTexture = require("../Textures/ColorTexture.class");
 const FrameTexture = require("../Textures/FrameTexture.class");
+const CanvasTexture = require("../Textures/CanvasTexture.class");
 const Translate = require("../Movements/Translate.class.js");
 const Scale = require("../Movements/Scale.class.js");
 const Rotate = require("../Movements/Rotate.class.js");
@@ -11,16 +12,19 @@ const glmatrix = require("../../../node_modules/gl-matrix/gl-matrix-min.js");
 
 class Object3D{
 
-	constructor(){
+	constructor(material){
 		this.id = Utils.newID(this);
 		this.transparency = false;
-		this.opacity = 1;
 		this.mirror = false;
 		this.mirrored = 0;
     this.stepUpAnimation = true;
     this.direction = [0, 0, 1];
 
-    this.material = new Material();
+    if(typeof material != "undefined"){
+      this.material = material;
+    }else{
+      this.material = new Material();
+    }
 
 		this.movements = [];
 
@@ -32,20 +36,14 @@ class Object3D{
     this.addMovement("position", this.positionTranslate);
     this.positionTranslate.start();
    
-    this.textures = [];
     this.textureCoordonnees = [];
 
     this.positions = [];
-    this.normals = [];
 
 	}
 
   renderTextures(){
-      for(let n in this.textures){
-          if(this.textures[n] instanceof FrameTexture){
-            this.textures[n].update(this);  
-          }
-      }
+    this.material.renderTextures(this);
   }
 
   getMaterial(){
@@ -76,43 +74,8 @@ class Object3D{
       delete this.movements[name];
   }
 
-  addTexture(name, texture){
-    if(typeof name != "string"){
-      movement = name;
-      name = "movement" + Object.keys(this.textures).length;
-    }
-    this.textures[name] = texture;
-    this._checkTransparency();
-  }
-
-  removeTexture(name){
-      delete this.textures[name];
-      this._checkTransparency();
-  }
-
   _checkTransparency(){
-      this.transparency = false;
-      for(let text in this.textures){
-          if(this.textures[text] instanceof MirrorTexture){
-              this.transparency = true;
-              this.mirror = true;
-          }else if(this.textures[text] instanceof ColorTexture && this.textures[text].getRGBA()[3] < 1){
-              this.transparency = true;
-          }else if(this.opacity < 1){
-              this.transparency = true;
-          }
-          //Gérer le cas des ImageTexture Transparentes
-      }
-  }
-
-
-  setOpacity(value){
-      this.opacity = value;
-      this._checkTransparency();
-  }
-
-  getOpacity(){
-      return this.opacity;
+      this.transparency = this.material.isTransparent();
   }
 
   getNbMovements(){
@@ -139,6 +102,7 @@ class Object3D{
 	}
 
 	isTransparent(){
+    this._checkTransparency();
 		return this.transparency;
 	}
 
@@ -157,7 +121,7 @@ class Object3D{
 	clone(neww){
 		neww.mirrored = this.mirrored;
 		neww.transparency = this.transparency;
-		neww.opacity = this.opacity;
+    neww.material = this.material;
     neww.direction = this.direction.slice();
 	}
 
@@ -210,46 +174,13 @@ class Object3D{
         transformsCollection[this.id] = [this, processedMatrix];
 	}
 
-  generateNormals(){
-    const norms = [];
-
-    for(let i = 0 ; i < this.indexes.length / 3 ; i++){
-      const p1 = [ this.positions[this.indexes[i*3]*3] , this.positions[this.indexes[i*3]*3+1] , this.positions[this.indexes[i*3]*3+2] ];
-      const p2 = [ this.positions[this.indexes[(i*3)+1]*3] , this.positions[this.indexes[(i*3)+1]*3+1] , this.positions[this.indexes[(i*3)+1]*3+2] ];
-      const p3 = [ this.positions[this.indexes[(i*3)+2]*3] , this.positions[this.indexes[(i*3)+2]*3+1] , this.positions[this.indexes[(i*3)+2]*3+2] ];
-      const vec1 = glmatrix.vec3.create();
-      const vec2 = glmatrix.vec3.create();
-      glmatrix.vec3.scale(p1, p1, -1);
-      glmatrix.vec3.add(vec1, p2, p1);
-      glmatrix.vec3.add(vec2, p3, p1);
-      const norm = glmatrix.vec3.create();
-      glmatrix.vec3.cross(norm, vec1, vec2);
-      glmatrix.vec3.normalize(norm, norm);
-      norms[this.indexes[i*3]*3] = norm[0];
-      norms[this.indexes[i*3]*3+1] = norm[1];
-      norms[this.indexes[i*3]*3+2] = norm[2];
-      norms[this.indexes[(i*3)+1]*3] = norm[0];
-      norms[this.indexes[(i*3)+1]*3+1] = norm[1];
-      norms[this.indexes[(i*3)+1]*3+2] = norm[2];
-      norms[this.indexes[(i*3)+2]*3] = norm[0];
-      norms[this.indexes[(i*3)+2]*3+1] = norm[1];
-      norms[this.indexes[(i*3)+2]*3+2] = norm[2];
-    }
-    return norms;
+  setOpacity(value){
+    this.material.setOpacity(value);
+    this._checkTransparency();
   }
 
-  generateNormalPositions(that){
-    const positions = [];
-    for(let i = 0 ; i < that.normals.length / 3; i++){
-      positions[positions.length] = that.positions[i*3];
-      positions[positions.length] = that.positions[i*3+1];
-      positions[positions.length] = that.positions[i*3+2];
-      positions[positions.length] = that.positions[i*3] + that.normals[i*3];
-      positions[positions.length] = that.positions[i*3+1] + that.normals[i*3+1];
-      positions[positions.length] = that.positions[i*3+2] + that.normals[i*3+2];
-    }
-
-    return positions;
+  getOpacity(){
+    return this.material.getOpacity();
   }
 
 	draw(webGLProgram){
@@ -262,8 +193,18 @@ class Object3D{
 		}else{
 			webGLProgram.getContext().depthMask(true);
 		}
-		webGLProgram.getContext().uniform1f(webGLProgram.getShaderBuilder().getPointer("opacity"), this.opacity);
+		webGLProgram.getContext().uniform1f(webGLProgram.getShaderBuilder().getPointer("opacity"), this.material.getOpacity());
 	}
+
+  addTexture(name, texture){
+    this.material.addTexture(name, texture);
+    this._checkTransparency();
+  }
+
+  removeTexture(name){
+    this.material.removeTexture(name);
+    this._checkTransparency();
+  }
 
   toLines(indexes){
     const result = [];

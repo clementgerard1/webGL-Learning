@@ -60,18 +60,20 @@ module.exports = function(){
 	ambient.setRGB(1, 1, 1);
 
 	const point = new PointLight();
-	point.setPower(1);
-	point.setRGB(1, 1, 1);
+	point.setPower([0.1, 0.3, 0.4]);
+	point.setRGB(0, 0, 1);
 	point.setPosition(0,0,1);
+	point.setDissipation(0,0.2, 0.1);
 
 	const spot = new SpotLight();
-	spot.setPower(1);
+	spot.setPower([0.1, 1, 1]);
 	spot.setRGB(1, 0, 0);
-	spot.setPosition(7, 0, 2);
+	spot.setPosition(1, 0, 1);
 	spot.setDirection(-1, 0, -1);
+	spot.setDissipation(0., 0, 0);
 
-	scene.addLight("ambient", ambient);
-	//scene.addLight("point", point);
+	//scene.addLight("ambient", ambient);
+	scene.addLight("point", point);
 	scene.addLight("spot", spot);
 
 	const rotateP = new Rotate(360, [1, 0, 0], 1200, function(){

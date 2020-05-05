@@ -10,13 +10,12 @@ const Rotate = require("../Movements/Rotate.class.js");
 
 class Plan extends Object3D {
 
-	constructor(){
-		super();
+	constructor(material){
+		super(material);
 
 		this.indexes = [
 	        0,  1,  2,      0,  2,  3,    // avant
 	    ];
-        this.textures = [];
         this.textureCoordonnees = [
             0., 0.,
             0., 1.,
@@ -42,9 +41,7 @@ class Plan extends Object3D {
         this.sizeScale.setPosition(0, 0, 0);
         this.addMovement("size", this.sizeScale);
         this.sizeScale.start();
-        console.log("avant");
-        this.normals = super.generateNormals();
-        console.log("après");
+        this.material.generateNormals(this);
 
 	}
 
@@ -59,36 +56,22 @@ class Plan extends Object3D {
 	}
 
     _sendTextureCoordonnees(webGLProgram, that){
-        const numTexture = 0;
-        for(let text in that.textures){
-            if(!(that.textures[text] instanceof MirrorTexture)){
 
-                if(that.textures[text] instanceof CanvasTexture){
-                  that.textures[text].update();
-                }
-                if(that.textures[text] instanceof FrameTexture){
-                  that.textures[text].update(that);
-                }
+        //Render textures
+        that.material.render(webGLProgram);
 
-                webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
-                webGLProgram.getContext().bindTexture(webGLProgram.getContext().TEXTURE_2D, that.textures[text].getTexture());
-                webGLProgram.getContext().uniform1i(webGLProgram.getShaderBuilder().getPointer("texture"), false, 0);
+        webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("textureCoordonnees"));
+        webGLProgram.getContext().vertexAttribPointer(
+            webGLProgram.getShaderBuilder().getPointer("textureCoordonnees"),
+            2,
+            webGLProgram.getContext().FLOAT,
+            false,
+            0,
+            0
+        );
 
-
-                webGLProgram.getContext().bindBuffer(webGLProgram.getContext().ARRAY_BUFFER, webGLProgram.getBuffer("textureCoordonnees"));
-                webGLProgram.getContext().vertexAttribPointer(
-                    webGLProgram.getShaderBuilder().getPointer("textureCoordonnees"),
-                    2,
-                    webGLProgram.getContext().FLOAT,
-                    false,
-                    0,
-                    0
-                );
-
-                //Insérer les données
-                webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.textureCoordonnees), webGLProgram.getContext().STATIC_DRAW);
-            }
-        }
+        //Insérer les données
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.textureCoordonnees), webGLProgram.getContext().STATIC_DRAW);
     }
 
 	_sendVertexPosition(webGLProgram, that){
@@ -122,22 +105,14 @@ class Plan extends Object3D {
             0,
             0
         );
-        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.normals), webGLProgram.getContext().STATIC_DRAW);
-    }
-
-    drawMirroredScene(text, processedMatrix){
-        //Mirror 
-        this.textures[text].preDraw(this, processedMatrix);
+        webGLProgram.getContext().bufferData(webGLProgram.getContext().ARRAY_BUFFER, new Float32Array(that.material.normals), webGLProgram.getContext().STATIC_DRAW);
     }
 
     draw(webGLProgram, attributs, processedMatrix){
         super.draw(webGLProgram);
+
         //Mirror
-        for(let text in this.textures){
-            if(this.textures[text] instanceof MirrorTexture){
-                 this.drawMirroredScene(text, processedMatrix);  
-            }
-        }
+        this.material.preDraw(this, processedMatrix);
        
         //Render attributs
         for(let i = 0 ; i < attributs.length ; i++){
@@ -162,7 +137,7 @@ class Plan extends Object3D {
         }else if(webGLProgram.getShaderBuilder().getMode() == "normal"){
 
             webGLProgram.getContext().uniform4fv(webGLProgram.getShaderBuilder().getPointer("normalColor"), false, webGLProgram.getShaderBuilder().getNormalColor());
-            webGLProgram.getContext().drawArrays(webGLProgram.getContext().LINES, 0, this.normals.length * 2);
+            webGLProgram.getContext().drawArrays(webGLProgram.getContext().LINES, 0, this.material.normals.length * 2);
 
         }else{
             webGLProgram.getContext().bufferData(webGLProgram.getContext().ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexes), webGLProgram.getContext().STATIC_DRAW);
@@ -175,12 +150,7 @@ class Plan extends Object3D {
         webGLProgram.getContext().enable(webGLProgram.getContext().CULL_FACE);
 
         //Mirror PostSettings
-        for(let text in this.textures){
-            if(this.textures[text] instanceof MirrorTexture){
-                this.textures[text].postDraw(this, processedMatrix);
-            }
-        }
-
+        this.material.postDraw(this, processedMatrix);
     }
 
     clone(){
@@ -192,7 +162,6 @@ class Plan extends Object3D {
         neww.indexes = this.indexes.slice();
         neww.textureCoordonnees = this.textureCoordonnees.slice();
         Object.assign(neww.movements, this.movements);
-        Object.assign(neww.textures, this.textures);
         Object.assign(neww.bufferFunctions, this.bufferFunctions);
         return neww;
     }

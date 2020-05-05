@@ -19,6 +19,7 @@ class ShaderBuilder{
 
 		this.needReBuild = true;
 
+		this.nbTextures = null;
 
 		//Vertex Shader Attributes
 		this.vertexAttributes = {
@@ -41,6 +42,7 @@ class ShaderBuilder{
 			"mirrorPoint" : true,
 			"mirrorVec1" : true,
 			"mirrorVec2" : true,
+			"cameraPosition" : false,
 		}
 
 		//Fragment Shader Uniform
@@ -122,7 +124,11 @@ class ShaderBuilder{
 			"IDasColor" : {
 				"type" : "uniform highp vec4",
 				"name" : "uIdColor",
-			} 
+			},
+			"cameraPosition" : {
+				"type" : "uniform lowp vec3",
+				"name" : "uCamPosition",
+			},
 			// "depthTexture" : {
 			// 	"type" : "uniform bool",
 			// 	"name" : "uDepthTextureActive",
@@ -144,6 +150,7 @@ class ShaderBuilder{
 			"opacity" : null,
 			"normalColor" : null,
 			"IDasColor" : null,
+			"cameraPosition" : null
 			//"depthTexture" : null,
 			
 		}
@@ -239,6 +246,10 @@ class ShaderBuilder{
 		}
 	}
 
+	checkTextures(nbTextures){
+		return this.nbTextures == nbTextures;
+	}
+
 	checkLights(ambient, directionals, points, spots){
 		if(ambient != Object.keys(this.ambientLights).length || directionals != Object.keys(this.directionalLights).length || points != Object.keys(this.pointLights).length || spots != Object.keys(this.spotLights).length){
 			return false;
@@ -278,6 +289,11 @@ class ShaderBuilder{
 		this.directionalLights = scene.getDirectionalLights();
 		this.pointLights = scene.getPointLights();
 		this.spotLights = scene.getSpotLights();
+
+		if(Object.keys(this.directionalLights).length != 0 || Object.keys(this.pointLights).length != 0 || Object.keys(this.spotLights).length != 0){
+			this.vertexUniforms["cameraPosition"] = true;
+		}
+
 		//add uniforms and attributes
 		for(let name in this.ambientLights){
 			this.fragmentUniforms[name] = true;
@@ -289,14 +305,28 @@ class ShaderBuilder{
 			}
 		}
 		for(let name in this.directionalLights){
-			this.fragmentUniforms[name + "_color"] = true;
+			this.fragmentUniforms[name + "_ambientColor"] = true;
+			this.fragmentUniforms[name + "_diffuseColor"] = true;
+			this.fragmentUniforms[name + "_specularColor"] = true;
 			this.fragmentUniforms[name + "_vector"] = true;
-			this.pointers[name + "_color"] = null;
+			this.pointers[name + "_ambientColor"] = null;
+			this.pointers[name + "_diffuseColor"] = null;
+			this.pointers[name + "_specularColor"] = null;
 			this.pointers[name + "_vector"] = null;
-			this.infos[name + "_color"] = {
+			this.infos[name + "_ambientColor"] = {
 				"nbDatas" : 3,
 				"type" : "uniform mediump vec3",
-				"name" : "udl_color_" + name,
+				"name" : "udl_ambientColor_" + name,
+			}
+			this.infos[name + "_diffuseColor"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "udl_diffuseColor_" + name,
+			}
+			this.infos[name + "_specularColor"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "udl_specularColor_" + name,
 			}
 			this.infos[name + "_vector"] = {
 				"nbDatas" : 3,
@@ -305,14 +335,51 @@ class ShaderBuilder{
 			}
 		}
 		for(let name in this.pointLights){
-			this.fragmentUniforms[name + "_color"] = true;
+			this.fragmentUniforms[name + "_ambientColor"] = true;
+			this.fragmentUniforms[name + "_diffuseColor"] = true;
+			this.fragmentUniforms[name + "_specularColor"] = true;
+			this.fragmentUniforms[name + "_constDissip"] = true;
+			this.fragmentUniforms[name + "_linDissip"] = true;
+			this.fragmentUniforms[name + "_quadDissip"] = true;
 			this.vertexUniforms[name + "_position"] = true;
-			this.pointers[name + "_color"] = null;
+
+			this.pointers[name + "_ambientColor"] = null;
+			this.pointers[name + "_diffuseColor"] = null;
+			this.pointers[name + "_specularColor"] = null;
+			this.pointers[name + "_constDissip"] = null;
+			this.pointers[name + "_linDissip"] = null;
+			this.pointers[name + "_quadDissip"] = null;
+
 			this.pointers[name + "_position"] = null;
-			this.infos[name + "_color"] = {
+			this.infos[name + "_ambientColor"] = {
 				"nbDatas" : 3,
 				"type" : "uniform mediump vec3",
-				"name" : "upl_color_" + name,
+				"name" : "udl_ambientColor_" + name,
+			}
+			this.infos[name + "_diffuseColor"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "udl_diffuseColor_" + name,
+			}
+			this.infos[name + "_specularColor"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "udl_specularColor_" + name,
+			}
+			this.infos[name + "_constDissip"] = {
+				"nbDatas" : 1,
+				"type" : "uniform mediump float",
+				"name" : "udl_constDissip_" + name,
+			}
+			this.infos[name + "_linDissip"] = {
+				"nbDatas" : 1,
+				"type" : "uniform mediump float",
+				"name" : "udl_linDissip_" + name,
+			}
+			this.infos[name + "_quadDissip"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump float",
+				"name" : "udl_quadDissip_" + name,
 			}
 			this.infos[name + "_position"] = {
 				"nbDatas" : 3,
@@ -325,16 +392,54 @@ class ShaderBuilder{
 			this.fragmentUniforms[name + "_iLimit"] = true;
 			this.fragmentUniforms[name + "_oLimit"] = true;
 			this.vertexUniforms[name + "_position"] = true;
-			this.fragmentUniforms[name + "_color"] = true;
+			this.fragmentUniforms[name + "_ambientColor"] = true;
+			this.fragmentUniforms[name + "_diffuseColor"] = true;
+			this.fragmentUniforms[name + "_specularColor"] = true;
+			this.fragmentUniforms[name + "_constDissip"] = true;
+			this.fragmentUniforms[name + "_linDissip"] = true;
+			this.fragmentUniforms[name + "_quadDissip"] = true;
+
 			this.pointers[name + "_direction"] = null;
 			this.pointers[name + "_iLimit"] = null;
 			this.pointers[name + "_oLimit"] = null;
-			this.pointers[name + "_color"] = null;
+			
+			this.pointers[name + "_ambientColor"] = null;
+			this.pointers[name + "_diffuseColor"] = null;
+			this.pointers[name + "_specularColor"] = null;
+			this.pointers[name + "_constDissip"] = null;
+			this.pointers[name + "_linDissip"] = null;
+			this.pointers[name + "_quadDissip"] = null;
+
 			this.pointers[name + "_position"] = null;
-			this.infos[name + "_color"] = {
+			this.infos[name + "_ambientColor"] = {
 				"nbDatas" : 3,
 				"type" : "uniform mediump vec3",
-				"name" : "usl_color_" + name,
+				"name" : "udl_ambientColor_" + name,
+			}
+			this.infos[name + "_diffuseColor"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "udl_diffuseColor_" + name,
+			}
+			this.infos[name + "_specularColor"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump vec3",
+				"name" : "udl_specularColor_" + name,
+			}
+			this.infos[name + "_constDissip"] = {
+				"nbDatas" : 1,
+				"type" : "uniform mediump float",
+				"name" : "udl_constDissip_" + name,
+			}
+			this.infos[name + "_linDissip"] = {
+				"nbDatas" : 1,
+				"type" : "uniform mediump float",
+				"name" : "udl_linDissip_" + name,
+			}
+			this.infos[name + "_quadDissip"] = {
+				"nbDatas" : 3,
+				"type" : "uniform mediump float",
+				"name" : "udl_quadDissip_" + name,
 			}
 			this.infos[name + "_position"] = {
 				"nbDatas" : 3,
@@ -357,6 +462,24 @@ class ShaderBuilder{
 				"name" : "usl_olimit_" + name,
 			}
 		}
+
+		//Textures Mapping
+		this.nbTextures = scene.getNbTextures();
+		//Associé une texture et uint avec un code permettant de savoir à quel type de texture l'attribuer
+		//1 pour normal
+		//2 pour ambiant
+		//4 pour difuse
+		//8 pour specular
+		//16 pour shininess
+
+		//Valeurs brutes sans texture
+		//1 pour normal
+		//2 pour ambiant
+		//4 pour difuse
+		//8 pour specular
+		//16 pour shininess
+
+
 
 		this._buildShaders();
 
@@ -440,6 +563,11 @@ class ShaderBuilder{
 				this.vertexSrc += this.infos[a].varyingType + " " + this.infos[a].varyingName + ";";
 			}
 		}
+
+		if(Object.keys(this.directionalLights).length != 0 || Object.keys(this.pointLights).length != 0 || Object.keys(this.spotLights).length != 0){
+			this.vertexSrc += "varying highp vec3 viewVec;";
+		}
+
 		for(let u in this.vertexUniforms){
 			if(this.vertexUniforms[u]){
 				this.vertexSrc += this.infos[u].type + " " + this.infos[u].name + ";";
@@ -544,6 +672,9 @@ class ShaderBuilder{
 			  	});
 				}
 			}
+			if(Object.keys(this.directionalLights).length != 0 || Object.keys(this.pointLights).length != 0 || Object.keys(this.spotLights).length != 0){
+				this.vertexSrc += "viewVec = normalize(newVec(vec4(" + this.infos["cameraPosition"].name + ", 1), gl_Position).xyz);";
+			}
 
 			//Projection
 			if(this.vertexUniforms["projection"] && this.vertexUniforms["localTransformation"] && this.vertexAttributes["position"]){
@@ -564,6 +695,9 @@ class ShaderBuilder{
 				this.fragmentSrc += this.infos[a].varyingType + " " + this.infos[a].varyingName + ";";
 			}
 		}
+		if(Object.keys(this.directionalLights).length != 0 || Object.keys(this.pointLights).length != 0 || Object.keys(this.spotLights).length != 0){
+			this.fragmentSrc += "varying highp vec3 viewVec;";
+		}
 		for(let u in this.fragmentUniforms){
 			if(this.fragmentUniforms[u]){
 				this.fragmentSrc += this.infos[u].type + " " + this.infos[u].name + ";";
@@ -571,6 +705,7 @@ class ShaderBuilder{
 		}
 
 		if(this.mode != "normal" && this.mode != "event"){
+
 			//Point Light
 			for(let n in this.pointLights){
 		  	this.fragmentSrc += this.pointLights[n].getFragmentShaderPreCode({
@@ -586,19 +721,93 @@ class ShaderBuilder{
 		}
 
 		//Light functions
-		//this.fragmentSrc += 
+		this.fragmentSrc += `
+			lowp vec3 ambientLight(vec3 ambientLight, vec3 ambientObject){
+				lowp vec3 ambient  = ambientLight  * ambientObject;
+				return ambient;
+			}
+			lowp vec3 directionalLight(vec3 normal, vec3 lightVec, vec3 viewVec, vec3 ambientLight, vec3 ambientObject, vec3 diffuseLight, vec3 diffuseObject, vec3 specularLight, vec3 specularObject, float shininess){
+				highp float diff = max(dot(normalize(normal), lightVec), 0.0);
+				lowp vec3 reflectDir = reflect(lightVec, normalize(normal));
+    		mediump float spec = pow(max(dot(viewVec, reflectDir), 0.0), shininess);
+				lowp vec3 ambient  = ambientLight  * ambientObject;
+    		lowp vec3 diffuse  = diffuseLight  * diff * diffuseObject;
+    		lowp vec3 specular = specularLight * spec * specularObject;
+				return ambient + diffuse + specular;
+			}
+			lowp vec3 pointLight(vec3 normal, float constDissip, float linDissip, float quadDissip, vec3 lightVec, vec3 viewVec, vec3 ambientLight, vec3 ambientObject, vec3 diffuseLight, vec3 diffuseObject, vec3 specularLight, vec3 specularObject, float shininess){
+				highp float diff = max(dot(normalize(normal), normalize(lightVec)), 0.0);
+				lowp vec3 reflectDir = reflect(normalize(lightVec), normalize(normal));
+    		mediump float spec = pow(max(dot(viewVec, reflectDir), 0.0), shininess);
+
+    		mediump float distance    = length(lightVec);
+    		mediump float sum = (constDissip + linDissip * distance + quadDissip * (distance * distance));
+    		mediump float attenuation = 1.0;
+    		if(sum != 0.0){
+    			attenuation = clamp(1.0 / sum, 0.0, 1.0);  
+    		}
+
+				lowp vec3 ambient  = ambientLight  * ambientObject * attenuation;
+    		lowp vec3 diffuse  = diffuseLight  * diff * diffuseObject * attenuation;
+    		lowp vec3 specular = specularLight * spec * specularObject * attenuation;
+				return ambient + diffuse + specular;
+			}
+			lowp vec3 spotLight(vec3 normal, float iLimit, float oLimit, vec3 direction, float constDissip, float linDissip, float quadDissip, vec3 lightVec, vec3 viewVec, vec3 ambientLight, vec3 ambientObject, vec3 diffuseLight, vec3 diffuseObject, vec3 specularLight, vec3 specularObject, float shininess){
+				mediump float isIn = max(dot(normalize(-direction), normalize(lightVec)), 0.0);
+				mediump float diff = 0.0;
+				mediump float spec = 0.0;
+				lowp vec3 reflectDir;
+				if(isIn > iLimit){ 
+					diff = max(dot(normalize(normal), normalize(lightVec)), 0.0);
+					reflectDir = reflect(normalize(lightVec), normalize(normal));
+					spec = pow(max(dot(viewVec, reflectDir), 0.0), shininess);
+				}else if(isIn < oLimit){ 
+					diff = 0.0;
+					spec = 0.0;
+				}else{
+					lowp float deg = clamp(( isIn - oLimit) / (iLimit - oLimit), 0.0, 1.0);
+					reflectDir = reflect(normalize(lightVec), normalize(normal));
+					diff = deg * max(dot(normalize(normal), normalize(lightVec)), 0.0);
+					spec = deg * pow(max(dot(viewVec, reflectDir), 0.0), shininess);
+				} 
+
+    		mediump float distance = length(lightVec);
+    		mediump float sum = (constDissip + linDissip * distance + quadDissip * (distance * distance));
+    		mediump float attenuation = 1.0;
+    		if(sum != 0.0){
+    			attenuation = clamp(1.0 / sum, 0.0, 1.0);  
+    		}
+
+				lowp vec3 ambient  = ambientLight  * ambientObject * attenuation;
+    		lowp vec3 diffuse  = diffuseLight  * diff * diffuseObject * attenuation;
+    		lowp vec3 specular = specularLight * spec * specularObject * attenuation;
+				return ambient + diffuse + specular;
+			}
+			`;
+		;
 
 		this.fragmentSrc += "void main() {";
 			//Color
-			//this.fragmentSrc += "if(" + this.infos["depthTexture"].name + " == false){"
+
+			//ICI IL FAUT DETERMINER la valeur de ambient, de diffuse, de specular et shininess
 			if(this.fragmentAttributes["color"]){
-				this.fragmentSrc += "gl_FragColor = " + this.infos["color"].varyingName + ";";
+				this.fragmentSrc += "lowp vec4 materialAmbient = " + this.infos["color"].varyingName + ";";
+				this.fragmentSrc += "lowp vec4 materialDiffuse = " + this.infos["color"].varyingName + ";";
+				this.fragmentSrc += "lowp vec4 materialSpecular = vec4(1., 1., 1., 1.);";
+				this.fragmentSrc += "highp float materialShininess = 100.0;";
 			}else if(this.fragmentAttributes["textureCoordonnees"]){
-				this.fragmentSrc += "gl_FragColor = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
+				this.fragmentSrc += "lowp vec4 materialAmbient = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
+				this.fragmentSrc += "lowp vec4 materialDiffuse = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
+				this.fragmentSrc += "lowp vec4 materialSpecular = vec4(1., 1., 1., 1.);";
+				this.fragmentSrc += "highp float materialShininess = 100.0;";
 			}
-			//this.fragmentSrc += "}"
 
 			if(this.mode != "normal" && this.mode != "event"){
+
+				if(Object.keys(this.ambientLights).length != 0 || Object.keys(this.directionalLights).length != 0 || Object.keys(this.pointLights).length != 0 || Object.keys(this.spotLights).length != 0){
+					this.fragmentSrc += "gl_FragColor = vec4(0, 0, 0, materialAmbient.a);"
+				}
+
 				//LIGHTS
 				for(let n in this.ambientLights){
 			  	this.fragmentSrc += this.ambientLights[n].getFragmentShaderMainCode({
@@ -608,7 +817,9 @@ class ShaderBuilder{
 				for(let n in this.directionalLights){
 			  	this.fragmentSrc += this.directionalLights[n].getFragmentShaderMainCode({
 			  		"normal" : this.infos["normal"],
-			  		"color" : this.infos[n + "_color"],
+			  		"ambient" : this.infos[n + "_ambientColor"],
+			  		"diffuse" : this.infos[n + "_diffuseColor"],
+			  		"specular" : this.infos[n + "_specularColor"],
 			  		"vector" : this.infos[n + "_vector"],
 			  		"name" : n
 			  	});
@@ -616,7 +827,12 @@ class ShaderBuilder{
 				for(let n in this.pointLights){
 			  	this.fragmentSrc += this.pointLights[n].getFragmentShaderMainCode({
 			  		"normal" : this.infos["normal"],
-			  		"color" : this.infos[n + "_color"],
+			  		"ambient" : this.infos[n + "_ambientColor"],
+			  		"diffuse" : this.infos[n + "_diffuseColor"],
+			  		"specular" : this.infos[n + "_specularColor"],
+			  		"constDissip" : this.infos[n + "_constDissip"],
+			  		"linDissip" : this.infos[n + "_linDissip"],
+			  		"quadDissip" : this.infos[n + "_quadDissip"],
 			  		"position" : this.infos[n + "_position"],
 			  		"name" : n
 			  	});
@@ -624,11 +840,16 @@ class ShaderBuilder{
 				for(let n in this.spotLights){
 			  	this.fragmentSrc += this.spotLights[n].getFragmentShaderMainCode({
 			  		"normal" : this.infos["normal"],
-			  		"color" : this.infos[n + "_color"],
+			  		"ambient" : this.infos[n + "_ambientColor"],
+			  		"diffuse" : this.infos[n + "_diffuseColor"],
+			  		"specular" : this.infos[n + "_specularColor"],
 			  		"position" : this.infos[n + "_position"],
 			  		"direction" : this.infos[n + "_direction"],
 			  		"iLimit" : this.infos[n + "_iLimit"],
 			  		"oLimit" : this.infos[n + "_oLimit"],
+			  		"constDissip" : this.infos[n + "_constDissip"],
+			  		"linDissip" : this.infos[n + "_linDissip"],
+			  		"quadDissip" : this.infos[n + "_quadDissip"],
 			  		"name" : n
 			  	});
 				}
@@ -639,10 +860,12 @@ class ShaderBuilder{
 			//Transparency
 			if(this.fragmentUniforms["opacity"]){
 				this.fragmentSrc += "gl_FragColor.a = gl_FragColor.a * " + this.infos["opacity"].name + ";";
+			}else{
+				this.fragmentSrc += "gl_FragColor.a = 1.0;";
 			}
 
 			if(this.mode == "event"){
-				this.fragmentSrc += "gl_FragColor = vec4(" + this.infos["IDasColor"].name + ".xyz, 0);";
+				this.fragmentSrc += "gl_FragColor = vec4(" + this.infos["IDasColor"].name + ".xyz, 0.0);";
 			}
 
 		this.fragmentSrc += "}";

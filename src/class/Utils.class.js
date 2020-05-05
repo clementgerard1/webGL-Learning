@@ -5,10 +5,19 @@ class Utils{
 	static nextID=-1;
 	static objects = [];
 
+	static nextMaterialID=-1;
+	static materials = [];
+
 	static newID(obj){
 		this.nextID = this.nextID + 1;
 		this.objects[this.nextID] = obj;
 		return this.nextID;
+	}
+
+	static newMaterialID(obj){
+		this.nextMaterialID = this.nextMaterialID + 1;
+		this.materials[this.nextMaterialID] = obj;
+		return this.nextMaterialID;
 	}
 
 	static orthoProjectPlane(point, pointPlan, vec1, vec2){

@@ -5,39 +5,36 @@ class DirectionalLight extends Light{
 
 	constructor(){
 		super();
-		this.power = 1.
 		this.rgb;
 		this.vector = glmatrix.vec3.fromValues(0, 0, -1);
 	}
 
-	setPower(f){
-		this.power = f;
-	}
-
-	setRGB(r, g, b){
-		this.rgb = [r, g, b];
-	}
-	getRGB(){
-		return this.rgb;
-	}
-
-	getPower(){
-		return this.power;
-	}
 
 	render(webGLProgram, name){
-		const rgb = [];
-		for(let i = 0 ; i < this.rgb.length ; i++){
-			rgb[i] = this.rgb[i] * this.power;
+		const ambientRGB = [];
+		for(let i = 0 ; i < this.ambient.length ; i++){
+			ambientRGB[i] = this.ambient[i] * this.aPower;
 		}
+		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_ambientColor"), ambientRGB);
+
+		const diffuseRGB = [];
+		for(let i = 0 ; i < this.diffuse.length ; i++){
+			diffuseRGB[i] = this.diffuse[i] * this.dPower;
+		}
+		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_diffuseColor"), diffuseRGB);
+
+		const specularRGB = [];
+		for(let i = 0 ; i < this.specular.length ; i++){
+			specularRGB[i] = this.specular[i] * this.sPower;
+		}
+
+		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_specularColor"), specularRGB);
+
 		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_vector"), this.vector);
-		webGLProgram.getContext().uniform3fv(webGLProgram.actualShaderBuilder.getPointer(name + "_color"), rgb);
 	}
 
 	getFragmentShaderMainCode(infos){
-		let str = "highp float " + infos.name + "power = dot(normalize(vec3(" + infos.normal.varyingName + ")), " + infos.vector.name + ");";
-		str += "gl_FragColor = vec4(" + infos.color.name + " * gl_FragColor.rgb * max(" + infos.name + "power, 0.0), gl_FragColor.a);";
-		return str;
+		return "gl_FragColor.rgb += directionalLight(" + infos.normal.varyingName + ".rgb, " +  infos.vector.name + ", viewVec, " + infos.ambient.name + ", materialAmbient.rgb," + infos.diffuse.name + ", materialDiffuse.rgb," + infos.specular.name + ", materialSpecular.rgb, materialShininess);";
 	}
 
 	setDirection(x, y, z){

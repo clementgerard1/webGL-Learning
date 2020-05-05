@@ -127,6 +127,11 @@ module.exports = function(){
 	light.setPower(1);
 	scene.addLight("ambient", light);
 
+	const light2 = new AmbientLight();
+	light2.setRGB(1, 1, 1);
+	light2.setPower(0.2);
+	scene.addLight("ambient2", light2);
+
 	scene.getShaderBuilder(0).setTextureRenderer(false);
 
 	program.setScene(scene);

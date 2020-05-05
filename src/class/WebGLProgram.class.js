@@ -150,16 +150,6 @@ class WebGLProgram{
 			i = 0;
 		}
 		this.scenes[i] = scene;
-		/*const previous = this.actualShader;
-		if(this.scene.getShader() != null){
-			this.actualShader = this.scene.getShader();
-		}else{
-			this.actualShader = this.defaultShaderBuilder;
-		}
-
-		if(previous != this.actualShader){
-			this.updateProgram();
-		}*/
 
 	}
 
