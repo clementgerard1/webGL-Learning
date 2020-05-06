@@ -14,35 +14,44 @@ class Rotate extends Movement{
 		this.started = false;
 		this.callback = callback;
 		this.finished = false;
-	}
+		this.animate = nbFrame > 0;
 
-	start(){
-		this.started = true;
-	}
+		if(typeof callback != "undefined"){
+			this.callback = callback;
+		}else{
+			this.callback = null;
+		}
 
-	stop(){
-		this.started = false;
-	}
-
-	reset(){
-		this.step = 0;
-		this.finished = false;
 	}
 
 	setPosition(x, y, z){
 		this.positions = [x, y, z];
 	}
 
-	process(matrix){
+	process(matrix, stepup){
 
-		if(this.started && this.step < this.nbFrame){
-			this.step++;
-		}
+		//glmatrix.vec3.transformQuat(axe, this.axe, quat);
+
+		//const quat = glmatrix.quat.create();
+		//glmatrix.mat4.getRotation(quat, matrix);
+		//glmatrix.quat.invert(quat, quat);
+		const positions = this.positions;//glmatrix.vec3.create();
+		//const axe = glmatrix.vec3.create();
 
 		glmatrix.mat4.translate(matrix, matrix, [this.positions[0], this.positions[1], this.positions[2]]);
-		glmatrix.mat4.rotate(matrix, matrix, this.angle * (this.step / this.nbFrame), this.axe);
+		
+		if(this.animate){
+			glmatrix.mat4.rotate(matrix, matrix, this.angle * super.getPourcent(), this.axe/*axe*/);
+		}else{
+			glmatrix.mat4.rotate(matrix, matrix, this.angle, this.axe/*axe*/);
+		}
+
+		//glmatrix.vec3.transformQuat(positions, this.positions, quat);
+
+
 		glmatrix.mat4.translate(matrix, matrix, [-this.positions[0], -this.positions[1], -this.positions[2]]);
 
+<<<<<<< HEAD
 
 
 		//MOVEMENT COMPLETED
@@ -64,6 +73,11 @@ class Rotate extends Movement{
 		if(!this.finished && this.step == this.nbFrame){
 			this.finished = true;
 			this.callback();
+=======
+		
+		if(stepup && this.animate){
+			super.endFrame();
+>>>>>>> tmp
 		}
 
 	}
@@ -80,6 +94,7 @@ class Rotate extends Movement{
 		neww.finished = this.finished;
 		return neww;
 	}
+<<<<<<< HEAD
 
 	mirrorClone(mirror){
 		const neww = new this.constructor();
@@ -101,6 +116,8 @@ class Rotate extends Movement{
 		neww.finished = this.finished;
 		return neww;
 	}
+=======
+>>>>>>> tmp
 	
 }
 module.exports = Rotate;

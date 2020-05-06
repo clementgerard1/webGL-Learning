@@ -3,6 +3,11 @@ const ColorTexture = require("./Textures/ColorTexture.class.js");
 const ImageTexture = require("./Textures/ImageTexture.class.js");
 const MirrorTexture = require("./Textures/MirrorTexture.class.js");
 const FrameTexture = require("./Textures/FrameTexture.class.js");
+<<<<<<< HEAD
+=======
+const CanvasTexture = require("./Textures/CanvasTexture.class.js");
+const EventTexture = require("./Textures/EventTexture.class.js");
+>>>>>>> tmp
 
 class WebGLProgram{
 
@@ -10,16 +15,29 @@ class WebGLProgram{
 		this.container = null;
 		this.parentBlock = null;
 		this.refreshId = null;
-		this.scene = null;
+
+		this.scenes = [];
+
 		this.started = false;
 		this.updateOnResize = true;
+		this.depthTextureExt = null;
+
+		//FPS Counter
+		this.fpsTime = 0;
+		this.fpsCount = 0;
+		this.fpsCallback;
+		this.fpsLast;
+		this.fpsDisplay = 1000;
 		
 		this._handleResize = this._handleResize.bind(this);
 		this.updateFrame = this.updateFrame.bind(this);
 
 		//Initialisation de l'environnement
 		this.canvas = document.createElement('canvas');
-		this.gl = this.canvas.getContext("webgl");
+		this.gl = this.canvas.getContext("webgl", {
+			stencil:true,
+			//alpha: false 
+		});
 
 		//Default Shader
 		this.defaultShaderBuilder = new ShaderBuilder();
@@ -28,6 +46,73 @@ class WebGLProgram{
 		//Variables
 		this.buffers = [];
 
+		this.preFrameFunction = null;
+		this.postFrameFunction = null;
+
+	}
+
+	setPreFrameFunction(func){
+		this.preFrameFunction = func;
+	}
+
+	setPostFrameFunction(func){
+		this.postFrameFunction = func;
+	}
+
+	setFPSDisplayTime(fpsDisplayTime){
+		this.fpsDisplay = fpsDisplayTime;
+	}
+
+	enableDepthTexture(){
+		this.depthTextureExt = this.gl.getExtension("WEBGL_depth_texture");
+	}
+
+	disableDepthTexture(){
+		this.depthTextureExt = null;
+	}
+
+	enableFPSCounter(callback, fpsDisplayTime){
+		if(typeof fpsDisplayTime != "undefined"){
+			this.fpsDisplay = fpsDisplayTime;
+		}
+		this.fpsCallback = callback;
+		this.fpsTime = 0;
+		this.fpsCount = 0;
+	}
+
+	disableFPSCounter(){
+		this.fpsCallback = null;
+		this.fpsLast = null;
+	}
+
+	createFrameTexture(renderer){
+		const texture = new FrameTexture(this, renderer);
+		return texture;
+	}
+
+	createCanvasTexture(canvas, func){
+		const texture = new CanvasTexture(this, canvas, func);
+		return texture;
+	}
+
+	createImageTexture(src){
+		const texture = new ImageTexture(this, src);
+		return texture;
+	}
+
+	createMirrorTexture(){
+		const texture = new MirrorTexture(this);
+		return texture;
+	}
+
+	createColorTexture(r, g, b, a){
+		const texture = new ColorTexture(this, r, g, b, a);
+		return texture;
+	}
+
+	createEventTexture(renderer){
+		const texture = new EventTexture(this, renderer);
+		return texture;
 	}
 
 	setTextureRenderer(bool){
@@ -70,23 +155,35 @@ class WebGLProgram{
 		return this.actualShaderBuilder;
 	}
 
-	setScene(scene){
-		this.scene = scene;
-		const previous = this.actualShader;
-		if(this.scene.getShader() != null){
-			this.actualShader = this.scene.getShader();
+	addScene(scene, i){
+		if(typeof i == "undefined"){
+			this.scenes[this.scenes.length] = scene;
 		}else{
-			this.actualShader = this.defaultShaderBuilder;
+			this.scenes.splice(i, 0, scene);
 		}
+	}
 
-		if(previous != this.actualShader){
-			this.updateProgram();
+	removeScene(i){
+		if(typeof i == "undefined"){
+			i = 0;
 		}
+		this.scenes.splice(i, 1);
+	}
+
+	setScene(scene, i){
+
+		if(typeof i == "undefined"){
+			i = 0;
+		}
+		this.scenes[i] = scene;
 
 	}
 
-	getScene(){
-		return this.scene;
+	getScene(i){
+		if(typeof i == "undefined"){
+			i = 0;
+		}
+		return this.scenes[i];
 	}
 
 	insertInBlock(block){
@@ -98,17 +195,8 @@ class WebGLProgram{
 		}
 	}
 
-	updateProgram(){
-		//Création du programme
-		this.shaderProgram = this.actualShader.getShaderProgram(this.gl);
-
-		//Création des buffers
-		this.buffers = [];
-		this.buffers["index"] = this.gl.createBuffer();
-		const attributs = this.actualShaderBuilder.getActiveAttributes();
-		for(let a in attributs){
-			this.buffers[attributs[a]] = this.gl.createBuffer();
-		}
+	getCanvas(){
+		return this.canvas;
 	}
 
 	getBuffer(name){
@@ -116,33 +204,47 @@ class WebGLProgram{
 	}
 
 	_handleResize(){
-		this.canvas.width = this.parentBlock.clientWidth;
-		this.canvas.height = this.parentBlock.clientHeight;
-		this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+		//var realToCSSPixels = window.devicePixelRatio;
+
+		//https://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html Pour la prise en charge écran rétina
+		this.canvas.width = Math.floor(this.parentBlock.clientWidth)// * realToCSSPixels);
+		this.canvas.height = Math.floor(this.parentBlock.clientHeight)// * realToCSSPixels);
 	}
 
 	updateFrame(){
 
-		//Initialisation
-		const colors = this.scene.getClearColor();
-		this.gl.clearColor(colors[0], colors[1], colors[2], colors[3]);
-
-		this.gl.enable(this.gl.DEPTH_TEST); 
-		this.gl.depthFunc(this.gl.LEQUAL); 
-
-		this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT);
-		this.gl.useProgram(this.shaderProgram);
-
-		const attributs = this.actualShaderBuilder.getActiveAttributes();
-		for(let i = 0 ; i < attributs.length ; i++){
-			this.gl.enableVertexAttribArray(this.actualShaderBuilder.getPointer(attributs[i]));
+		if(this.preFrameFunction != null){
+			this.preFrameFunction();
 		}
 
-		//Shader uniforms
-		this.gl.uniformMatrix4fv(this.actualShaderBuilder.getPointer("projection"), false, this.scene.getCamera().getMatrix(this.gl.canvas.clientWidth / this.gl.canvas.clientHeight));
-		
+		if(this.fpsCallback != null){
+			const now = new Date().getTime();
+			if(this.fpsLast != null){
+				this.fpsTime += (now - this.fpsLast);
+				this.fpsCount++;
+				if(this.fpsTime > this.fpsDisplay){
+					this.fpsCallback((this.fpsCount * (1000 / this.fpsTime)).toFixed(2));
+					this.fpsTime = 0;
+					this.fpsCount = 0;
+				}
+			}
+
+			this.fpsLast = now;
+
+		}
+
 		//Render
-		this.scene.render(this);
+		for(let i = 0 ; i < this.scenes.length ; i++){
+			this.scenes[i].renderTextures(this);
+		}
+
+		for(let i = 0 ; i < this.scenes.length ; i++){
+			this.scenes[i].render(this);
+		}
+
+		if(this.postFrameFunction != null){
+			this.postFrameFunction();
+		}
 
 		//Next Frame
 		if(this.started){
