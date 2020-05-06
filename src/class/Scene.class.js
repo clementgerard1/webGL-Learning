@@ -28,8 +28,19 @@ class Scene{
 		return this.activeCamera;
 	}
 
-	getNbTextures(){
-		return 0;
+	getInfos(){
+		let nbTextures = 0;
+		let nbColors = 0;
+		const objs = this.getAllObjects();
+		for(let obj in objs){
+			const infos = objs[obj].getMaterialInfos();
+			nbTextures = Math.max(nbTextures, infos.textures);
+			nbColors = Math.max(nbColors, infos.colors);
+		}
+		return {
+			"textures" : nbTextures,
+			"colors" : nbColors
+		}
 	}
 
 	addRenderer(renderer, i){

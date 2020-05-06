@@ -2,6 +2,7 @@ const WebGLProgram = require("../class/WebGLProgram.class.js");
 const Camera = require("../class/Camera.class.js");
 const Cube = require("../class/Objects3D/Cube.class.js");
 const AmbientLight = require("../class/Lights/AmbientLight.class.js");
+const DirectionalLight = require("../class/Lights/DirectionalLight.class.js");
 const Scene = require("../class/Scene.class.js");
 const Rotate = require("../class/Movements/Rotate.class.js");
 const Object3DGroup = require("../class/Objects3D/Object3DGroup.class.js");
@@ -18,35 +19,19 @@ module.exports = function(){
 	//Tête
 	const tete = new Cube();
 	tete.setSize(2);
-	tete.setColors([1,0,1,1], //Devant
-		[1,1,1,1], //Gauche
-		[0,1,0,1], //Haut
-		[0,0,1,1], //Droite
-		[1,1,0,1], //Bas
-		[0,1,1,1] //Derriere
-	);
+	const textTete = program.createColorTexture(1, 0, 1, 1);
+	tete.addTexture(textTete);
 	tete.setPosition(0, 0, 0);
 
 	//Yeux
 	const oeil1 = new Cube();
+	const textYeux = program.createColorTexture(0, 1, 1, 1);
 	oeil1.setSize(0.5);
-	oeil1.setColors([0,1,1,1], //Devant
-		[0,1,1,1], //Gauche
-		[0,1,1,1], //Haut
-		[0,1,1,1], //Droite
-		[0,1,1,1], //Bas
-		[0,1,1,1] //Derriere
-	);
+	oeil1.addTexture(textYeux);
 	oeil1.setPosition(-0.6, 0.5, 0);
 	const oeil2 = new Cube();
 	oeil2.setSize(0.5);
-	oeil2.setColors([0,1,1,1], //Devant
-		[0,1,1,1], //Gauche
-		[0,1,1,1], //Haut
-		[0,1,1,1], //Droite
-		[0,1,1,1], //Bas
-		[0,1,1,1] //Derriere
-	);
+	oeil2.addTexture(textYeux);
 	oeil2.setPosition(0.6, 0.5, 0);
 
 	const yeux = new Object3DGroup();
@@ -65,35 +50,18 @@ module.exports = function(){
 	moveOeil2.start();
 
 	//Bouche
+	const textDents = program.createColorTexture(1, 1, 1, 1);
 	const dent1 = new Cube();
 	dent1.setSize(0.1);
-	dent1.setColors([1,1,1,1], //Devant
-		[1,1,1,1], //Gauche
-		[1,1,1,1], //Haut
-		[1,1,1,1], //Droite
-		[1,1,1,1], //Bas
-		[1,1,1,1] //Derriere
-	);
+	dent1.addTexture(textDents);
 	dent1.setPosition(-0.25, 0, 0);
 	const dent2 = new Cube();
 	dent2.setSize(0.1);
-	dent2.setColors([1,1,1,1], //Devant
-		[1,1,1,1], //Gauche
-		[1,1,1,1], //Haut
-		[1,1,1,1], //Droite
-		[1,1,1,1], //Bas
-		[1,1,1,1] //Derriere
-	);
+	dent2.addTexture(textDents);
 	dent2.setPosition(0, 0, 0);
 	const dent3 = new Cube();
 	dent3.setSize(0.1);
-	dent3.setColors([1,1,1,1], //Devant
-		[1,1,1,1], //Gauche
-		[1,1,1,1], //Haut
-		[1,1,1,1], //Droite
-		[1,1,1,1], //Bas
-		[1,1,1,1] //Derriere
-	);
+	dent3.addTexture(textDents);
 	dent3.setPosition(0.25, 0, 0);
 
 	const dents = new Object3DGroup();
@@ -122,17 +90,11 @@ module.exports = function(){
 	scene.addCamera("main", camera);
 	scene.setCamera("main");
 
-	const light = new AmbientLight();
+	const light = new DirectionalLight();
 	light.setRGB(1, 1, 1);
-	light.setPower(1);
+	light.setPower([0.1, 1, 1]);
+	light.setDirection(-0.3, 0, -1);
 	scene.addLight("ambient", light);
-
-	const light2 = new AmbientLight();
-	light2.setRGB(1, 1, 1);
-	light2.setPower(0.2);
-	scene.addLight("ambient2", light2);
-
-	scene.getShaderBuilder(0).setTextureRenderer(false);
 
 	program.setScene(scene);
 

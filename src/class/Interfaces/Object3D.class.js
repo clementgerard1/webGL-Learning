@@ -42,6 +42,10 @@ class Object3D{
 
 	}
 
+  getMaterialInfos(){
+    return this.material.getInfos();
+  }
+
   renderTextures(){
     this.material.renderTextures(this);
   }

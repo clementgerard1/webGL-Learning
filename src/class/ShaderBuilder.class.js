@@ -20,6 +20,7 @@ class ShaderBuilder{
 		this.needReBuild = true;
 
 		this.nbTextures = null;
+		this.nbColors = null;
 
 		//Vertex Shader Attributes
 		this.vertexAttributes = {
@@ -28,7 +29,6 @@ class ShaderBuilder{
 
 		//Fragment Shader Attributes
 		this.fragmentAttributes = {
-			"color" : false, // ALWAYS FALSE
 			"textureCoordonnees" : true, // ALWAYS TRUE
 			"normal" : true,
 		};
@@ -47,10 +47,22 @@ class ShaderBuilder{
 
 		//Fragment Shader Uniform
 		this.fragmentUniforms = {
-			"texture" : true,// ALWAYS TRUE
 			"opacity" : true,
 			"normalColor" : false,
 			"IDasColor" : false,
+			"ambientTIndex" : true,
+			"ambientCIndex" : true,
+			"diffuseTIndex" : true,
+			"diffuseCIndex" : true,
+			"specularTIndex" : true,
+			"specularCIndex" : true,
+			"shininessTIndex" : true,
+			"shininessCIndex" : true,
+			"normalTIndex" : true,
+			"normalCIndex" : true,
+			"normalVarying" : true,
+			//Material
+
 			//"depthTexture" : true,
 		}
 
@@ -59,13 +71,6 @@ class ShaderBuilder{
 				"nbDatas" : 3,
 				"type" : "attribute vec4",
 				"name" : "aVertexPosition",
-			},
-			"color" : {
-				"nbDatas" : 4,
-				"type" : "attribute vec4",
-				"name" : "aVertexColor",
-				"varyingType" : "varying lowp vec4",
-				"varyingName" : "vColor",
 			},
 			"normal" : {
 				"nbDatas" : 3,
@@ -85,10 +90,6 @@ class ShaderBuilder{
 			"localTransformationTransposeInvert" : {
 				"type" : "uniform mat4",
 				"name" : "uLocalTransformationTIMatrix",
-			},
-			"texture" : {
-				"type" : "uniform sampler2D",
-				"name" : "uSampler",
 			},
 			"opacity" : {
 				"type" : "uniform highp float",
@@ -129,15 +130,56 @@ class ShaderBuilder{
 				"type" : "uniform lowp vec3",
 				"name" : "uCamPosition",
 			},
-			// "depthTexture" : {
-			// 	"type" : "uniform bool",
-			// 	"name" : "uDepthTextureActive",
-			// }
+
+			//Material
+			"ambientTIndex" : {
+				"type" : "uniform lowp int",
+				"name" : "uAmbientTIndex"
+			},
+			"ambientCIndex" : {
+				"type" : "uniform lowp int",
+				"name" : "uAmbientCIndex"
+			},
+			"diffuseTIndex" : {
+				"type" : "uniform lowp int",
+				"name" : "uDiffuseTIndex"
+			},
+			"diffuseCIndex" : {
+				"type" : "uniform lowp int",
+				"name" : "uDiffuseCIndex"
+			},
+			"specularTIndex" : {
+				"type" : "uniform lowp int",
+				"name" : "uSpecularTIndex"
+			},
+			"specularCIndex" : {
+				"type" : "uniform lowp int",
+				"name" : "uSpecularCIndex"
+			},
+			"shininessTIndex" : {
+				"type" : "uniform lowp int",
+				"name" : "uShininessTIndex"
+			},
+			"shininessCIndex" : {
+				"type" : "uniform lowp int",
+				"name" : "uShininessCIndex"
+			},
+			"normalTIndex" : {
+				"type" : "uniform lowp int",
+				"name" : "uNormalTIndex"
+			},
+			"normalCIndex" : {
+				"type" : "uniform lowp int",
+				"name" : "uNormalCIndex"
+			},
+			"normalVarying" : {
+				"type" : "uniform bool",
+				"name" : "uNormalVarying"
+			},
 		}
 
 		this.pointers = {
 			"position" : null,
-			"color" : null,
 			"normal" : null,
 			"projection" : null,
 			"localTransformation" : null,
@@ -150,8 +192,18 @@ class ShaderBuilder{
 			"opacity" : null,
 			"normalColor" : null,
 			"IDasColor" : null,
-			"cameraPosition" : null
-			//"depthTexture" : null,
+			"cameraPosition" : null,
+			"ambientTIndex" : null,
+			"ambientCIndex" : null,
+			"diffuseTIndex" : null,
+			"diffuseCIndex" : null,
+			"specularTIndex" : null,
+			"specularCIndex" : null,
+			"shininessTIndex" : null,
+			"shininessCIndex" : null,
+			"normalTIndex" : null,
+			"normalCIndex" : null,
+			"normalVarying" : null,
 			
 		}
 
@@ -174,41 +226,33 @@ class ShaderBuilder{
 				this.normalDisplay = false;
 				this.fragmentAttributes["normal"] = true;
 				this.fragmentAttributes["textureCoordonnees"] = true;
-				this.fragmentAttributes["color"] = false;
 				this.fragmentUniforms["normalColor"] = false;
-				this.fragmentUniforms["texture"] = true;
 				this.fragmentUniforms["opacity"] = true;
 				this.fragmentUniforms["IDasColor"] = false;
 			}else if(mode == "normal"){
 				this.triangleMode = false;
 				this.normalDisplay = true;
-				this.fragmentAttributes["color"] = false;
 				this.fragmentAttributes["normal"] = false;
 				this.fragmentAttributes["textureCoordonnees"] = false;
 				this.fragmentUniforms["normalColor"] = true;
-				this.fragmentUniforms["texture"] = false;
 				this.fragmentUniforms["opacity"] = false;
 				this.fragmentUniforms["IDasColor"] = false;
 				
 			}else if(mode == "event"){
 				this.triangleMode = true;
 				this.normalDisplay = false;
-				this.fragmentAttributes["color"] = false;
 				this.fragmentAttributes["normal"] = false;
 				this.fragmentAttributes["textureCoordonnees"] = false;
 				this.fragmentUniforms["normalColor"] = false;
-				this.fragmentUniforms["texture"] = false;
 				this.fragmentUniforms["opacity"] = false;
 				this.fragmentUniforms["IDasColor"] = true;
 				
 			}else{
 				this.triangleMode = true;
 				this.normalDisplay = false;
-				this.fragmentAttributes["color"] = false;
 				this.fragmentAttributes["normal"] = true;
 				this.fragmentAttributes["textureCoordonnees"] = true;
 				this.fragmentUniforms["normalColor"] = false;
-				this.fragmentUniforms["texture"] = true;
 				this.fragmentUniforms["opacity"] = true;
 				this.fragmentUniforms["IDasColor"] = false;
 			}
@@ -234,20 +278,8 @@ class ShaderBuilder{
 		return result;
 	}
 
-	setTextureRenderer(bool){
-		if(bool){
-			this.fragmentAttributes["color"] = false;
-			this.fragmentAttributes["textureCoordonnees"] = true;
-			this.fragmentUniforms["texture"] = true;
-		}else{
-			this.fragmentAttributes["color"] = true;
-			this.fragmentAttributes["textureCoordonnees"] = false;
-			this.fragmentUniforms["texture"] = false;
-		}
-	}
-
-	checkTextures(nbTextures){
-		return this.nbTextures == nbTextures;
+	checkTextures(infos){
+		return (this.nbTextures == infos.textures) && (this.nbColors == infos.colors);
 	}
 
 	checkLights(ambient, directionals, points, spots){
@@ -289,6 +321,10 @@ class ShaderBuilder{
 		this.directionalLights = scene.getDirectionalLights();
 		this.pointLights = scene.getPointLights();
 		this.spotLights = scene.getSpotLights();
+
+		const texturesInfos = scene.getInfos();
+		this.nbTextures = texturesInfos.textures;
+		this.nbColors = texturesInfos.colors;
 
 		if(Object.keys(this.directionalLights).length != 0 || Object.keys(this.pointLights).length != 0 || Object.keys(this.spotLights).length != 0){
 			this.vertexUniforms["cameraPosition"] = true;
@@ -464,22 +500,23 @@ class ShaderBuilder{
 		}
 
 		//Textures Mapping
-		this.nbTextures = scene.getNbTextures();
-		//Associé une texture et uint avec un code permettant de savoir à quel type de texture l'attribuer
-		//1 pour normal
-		//2 pour ambiant
-		//4 pour difuse
-		//8 pour specular
-		//16 pour shininess
-
-		//Valeurs brutes sans texture
-		//1 pour normal
-		//2 pour ambiant
-		//4 pour difuse
-		//8 pour specular
-		//16 pour shininess
-
-
+		for(let i = 0 ; i < this.nbTextures ; i++){
+			this.fragmentUniforms["texture"+ i] = true;
+			this.pointers["texture"+ i] = null;
+			this.infos["texture" + i] = {
+				"type" : "uniform sampler2D",
+				"name" : "uSampler" + i,
+			}
+		}
+		//Colors Mapping
+		for(let i = 0 ; i < this.nbColors ; i++){
+			this.fragmentUniforms["color"+ i] = true;
+			this.pointers["color"+ i] = null;
+			this.infos["color" + i] = {
+				"type" : "uniform mediump vec4",
+				"name" : "uColor" + i,
+			}
+		}
 
 		this._buildShaders();
 
@@ -689,7 +726,7 @@ class ShaderBuilder{
 
 	_buildFragmentShader(){
 
-		this.fragmentSrc = '';
+		this.fragmentSrc = ` precision mediump float; `;
 		for(let a in this.fragmentAttributes){
 			if(this.fragmentAttributes[a]){
 				this.fragmentSrc += this.infos[a].varyingType + " " + this.infos[a].varyingName + ";";
@@ -784,23 +821,45 @@ class ShaderBuilder{
 				return ambient + diffuse + specular;
 			}
 			`;
+
+			this.fragmentSrc += "lowp vec4 determineColor(int textIndex, int colorIndex){";
+				this.fragmentSrc += "lowp vec4 result = vec4(1, 1, 1, 1);";
+
+				//Textures
+				this.fragmentSrc += "lowp int temp = textIndex;";
+				for(let i = this.nbTextures - 1 ; i >= 0 ; i--){
+					this.fragmentSrc += "if(temp >= " + Math.pow(2, i) + "){";
+						if(this.fragmentAttributes["textureCoordonnees"]){
+							this.fragmentSrc += "result = result * texture2D(" + this.infos["texture" + i].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
+							this.fragmentSrc += "temp = temp - " + Math.pow(2, i) + ";";
+						}
+					this.fragmentSrc += "}";
+				}
+				//Colors
+				this.fragmentSrc += "temp = colorIndex;";
+				for(let i = this.nbColors - 1 ; i >= 0 ; i--){
+					this.fragmentSrc += "if(temp >= " + Math.pow(2, i) + "){";
+						this.fragmentSrc += "result = result * " + this.infos["color" + i].name + ";";
+						this.fragmentSrc += "temp = temp - " + Math.pow(2, i) + ";";
+					this.fragmentSrc += "}";
+				}
+
+				this.fragmentSrc += "return result;";
+			this.fragmentSrc += "}";
+				
+			this.fragmentSrc += `highp float determineShininess(int textIndex, int colorIndex){
+				lowp vec4 result = determineColor(textIndex, colorIndex);
+				return (result.r * 1000.0 + result.g * 100.0 + result.b * 10.0 + result.a);
+			}`;
 		;
 
 		this.fragmentSrc += "void main() {";
-			//Color
 
-			//ICI IL FAUT DETERMINER la valeur de ambient, de diffuse, de specular et shininess
-			if(this.fragmentAttributes["color"]){
-				this.fragmentSrc += "lowp vec4 materialAmbient = " + this.infos["color"].varyingName + ";";
-				this.fragmentSrc += "lowp vec4 materialDiffuse = " + this.infos["color"].varyingName + ";";
-				this.fragmentSrc += "lowp vec4 materialSpecular = vec4(1., 1., 1., 1.);";
-				this.fragmentSrc += "highp float materialShininess = 100.0;";
-			}else if(this.fragmentAttributes["textureCoordonnees"]){
-				this.fragmentSrc += "lowp vec4 materialAmbient = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
-				this.fragmentSrc += "lowp vec4 materialDiffuse = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
-				this.fragmentSrc += "lowp vec4 materialSpecular = vec4(1., 1., 1., 1.);";
-				this.fragmentSrc += "highp float materialShininess = 100.0;";
-			}
+			//Material
+			this.fragmentSrc += "lowp vec4 materialAmbient = determineColor(" + this.infos["ambientTIndex"].name + "," + this.infos["ambientCIndex"].name + ");";
+			this.fragmentSrc += "lowp vec4 materialDiffuse = determineColor(" + this.infos["diffuseTIndex"].name + "," + this.infos["diffuseCIndex"].name + ");";
+			this.fragmentSrc += "lowp vec4 materialSpecular = determineColor(" + this.infos["specularTIndex"].name + "," + this.infos["specularCIndex"].name + ");";
+			this.fragmentSrc += "highp float materialShininess = determineShininess(" + this.infos["shininessTIndex"].name + "," + this.infos["shininessCIndex"].name + ");";
 
 			if(this.mode != "normal" && this.mode != "event"){
 

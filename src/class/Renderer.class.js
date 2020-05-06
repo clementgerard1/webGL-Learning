@@ -121,7 +121,6 @@ class Renderer{
 
 	render(webGLProgram, viewPortDimensions){
 
-
 		if(typeof viewPortDimensions == "object"){
 			viewPortDimensions = {
 				"width" : viewPortDimensions[0],
@@ -149,7 +148,7 @@ class Renderer{
 		}
 
 		if(!webGLProgram.actualShaderBuilder.checkLights(this.scene.getNbAmbientLights(), this.scene.getNbDirectionalLights(), this.scene.getNbPointLights(), this.scene.getNbSpotLights())
-				&& !webGLProgram.actualShaderBuilder.checkTextures(this.scene.getNbTextures())
+				&& !webGLProgram.actualShaderBuilder.checkTextures(this.scene.getInfos())
 			){
 			webGLProgram.actualShaderBuilder.buildShaderProgram(gl, this.scene);
 		} else if(webGLProgram.actualShaderBuilder.needRebuild()){

@@ -9,24 +9,131 @@ class Material{
 
 	constructor(ambient, diffuse, specular, shininess){
 		this.id = Utils.newMaterialID(this);
-		this.ambient = []; // Vec4 ou Texture
-    this.diffuse = []; // Vec4 ou Texture
-    this.specular = []; // Vec4 ou Texture
-    this.shininess = []; // Float ou Texture
-    this.normals = []; // Vec4 ou Texture
+		this.ambientTextures = []; 
+
+    this.diffuseTextures = [];
+
+    this.specularTextures = [];
+
+    this.shininessTextures = [];
+
+    this.normalTextures = []; 
+    this.normals = []; 
+    this.normalMap = false;
+
     this.opacity = 1;
 
+    //Mapping
     this.textures = [];
+
 	}
 
 	render(webGLProgram){
+
+
+    const textIndexes = [];
+    const gl = webGLProgram.getContext();
+
+    //Renders textures units
+    let i = 1;
+    let countT = 0;
 		for(let text in this.textures){
-			if(!(this.textures[text] instanceof MirrorTexture)){
-		    webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
-		    webGLProgram.getContext().bindTexture(webGLProgram.getContext().TEXTURE_2D, this.textures[text].getTexture());
-		    webGLProgram.getContext().uniform1i(webGLProgram.getShaderBuilder().getPointer("texture"), false, 0);
+			if(!(this.textures[text] instanceof MirrorTexture) && !(this.textures[text] instanceof ColorTexture)){
+		    gl.activeTexture(gl.TEXTURE0 + 0);
+		    gl.bindTexture(gl.TEXTURE_2D, this.textures[text].getTexture());
+		    gl.uniform1i(webGLProgram.getShaderBuilder().getPointer("texture" + countT), false, 0);
+        textIndexes[text] = i;
+        i *= 2;
+        countT++;
 		  }
 	  }
+
+    const colorIndexes = [];
+
+    //Renders colors
+    let j = 1;
+    let countC = 0;
+    for(let text in this.textures){
+      if(this.textures[text] instanceof ColorTexture){
+        gl.uniform4fv(webGLProgram.actualShaderBuilder.getPointer("color" + countC), this.textures[text].getRGBA());
+        colorIndexes[text] = j;
+        j *= 2;
+        countC++;
+      }
+    }    
+
+    //Renders nombres of informations pour chaque caractéristique
+
+    //Ambient
+    let count = 0;
+    let count2 = 0;
+    for(let text in this.ambientTextures){
+      if(!(this.textures[this.ambientTextures[text]] instanceof MirrorTexture) && !(this.textures[this.ambientTextures[text]] instanceof ColorTexture)){
+        count += textIndexes[this.ambientTextures[text]];
+      }else if(this.textures[this.ambientTextures[text]] instanceof ColorTexture){
+        count2 += colorIndexes[this.ambientTextures[text]];
+      }
+    }  
+    gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("ambientTIndex"), count);
+    gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("ambientCIndex"), count2);
+
+
+    //Diffuse
+    count = 0;
+    count2 = 0;
+    for(let text in this.diffuseTextures){
+      if(!(this.textures[this.diffuseTextures[text]] instanceof MirrorTexture) && !(this.textures[this.diffuseTextures[text]] instanceof ColorTexture)){
+        count += textIndexes[this.diffuseTextures[text]];
+      }else if(this.textures[this.diffuseTextures[text]] instanceof ColorTexture){
+        count2 += colorIndexes[this.diffuseTextures[text]];
+      }
+    }  
+    gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("diffuseTIndex"), count);
+    gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("diffuseCIndex"), count2);
+
+    //Specular
+    count = 0;
+    count2 = 0;
+    for(let text in this.specularTextures){
+      if(!(this.textures[this.specularTextures[text]] instanceof MirrorTexture) && !(this.textures[this.specularTextures[text]] instanceof ColorTexture)){
+        count += textIndexes[this.specularTextures[text]];
+      }else if(this.textures[this.specularTextures[text]] instanceof ColorTexture){
+        count2 += colorIndexes[this.specularTextures[text]];
+      }
+    }  
+    gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("specularTIndex"), count);
+    gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("specularCIndex"), count2);
+
+    //Shininess
+    count = 0;
+    count2 = 0;
+    for(let text in this.shininessTextures){
+      if(!(this.textures[this.shininessTextures[text]] instanceof MirrorTexture) && !(this.textures[this.shininessTextures[text]] instanceof ColorTexture)){
+        count += textIndexes[this.shininessTextures[text]];
+      }else if(this.textures[this.shininessTextures[text]] instanceof ColorTexture){
+        count2 += colorIndexes[this.shininessTextures[text]];
+      }
+    }  
+    gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("shininessTIndex"), count);
+    gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("shininessCIndex"), count2);
+
+    //Normal
+    count = 0;
+    count2 = 0;
+    for(let text in this.normalTextures){
+      if(!(this.textures[this.normalTextures[text]] instanceof MirrorTexture) && !(this.textures[this.normalTextures[text]] instanceof ColorTexture)){
+        count += textIndexes[this.normalTextures[text]];
+      }else if(this.textures[this.normalTextures[text]] instanceof ColorTexture){
+        count2 += colorIndexes[this.normalTextures[text]];
+      }
+    } 
+    gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("normalTIndex"), count);
+    gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("normalCIndex"), count2);
+    if(this.normalMap){
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("normalVarying"), 0);
+    }else{
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("normalVarying"), 1);
+    }
 	}
 
 	getTextures(){
@@ -34,7 +141,19 @@ class Material{
 	}
 
 	getInfos(){
-		//Nb de texture à rendre, etc...
+    let nbTextures = 0;
+    let nbColors = 0;
+    for(let text in this.textures){
+      if(!(this.textures[text] instanceof MirrorTexture) && !(this.textures[text] instanceof ColorTexture)){
+        nbTextures++;
+      }else if(this.textures[text] instanceof ColorTexture){
+        nbColors++;
+      }
+    }  
+		return {
+      "textures" : nbTextures,
+      "colors" : nbColors
+    }
 	}
 
   setOpacity(value){
@@ -96,11 +215,21 @@ class Material{
   }
 
   addTexture(name, texture){
+
     if(typeof name != "string"){
-      movement = name;
+      texture = name;
       name = "texture" + Object.keys(this.textures).length;
     }
     this.textures[name] = texture;
+
+    this.ambientTextures = [name]; 
+
+    this.diffuseTextures = [name];
+
+    this.specularTextures = [name];
+
+    this.shininessTextures = [name];
+
   }
 
   removeTexture(name){

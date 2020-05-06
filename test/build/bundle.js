@@ -499,6 +499,11 @@ function () {
   }
 
   _createClass(Object3D, [{
+    key: "getMaterialInfos",
+    value: function getMaterialInfos() {
+      return this.material.getInfos();
+    }
+  }, {
     key: "renderTextures",
     value: function renderTextures() {
       this.material.renderTextures(this);
@@ -1360,29 +1365,128 @@ function () {
     _classCallCheck(this, Material);
 
     this.id = Utils.newMaterialID(this);
-    this.ambient = []; // Vec4 ou Texture
+    this.ambientTextures = [];
+    this.diffuseTextures = [];
+    this.specularTextures = [];
+    this.shininessTextures = [];
+    this.normalTextures = [];
+    this.normals = [];
+    this.normalMap = false;
+    this.opacity = 1; //Mapping
 
-    this.diffuse = []; // Vec4 ou Texture
-
-    this.specular = []; // Vec4 ou Texture
-
-    this.shininess = []; // Float ou Texture
-
-    this.normals = []; // Vec4 ou Texture
-
-    this.opacity = 1;
     this.textures = [];
   }
 
   _createClass(Material, [{
     key: "render",
     value: function render(webGLProgram) {
+      var textIndexes = [];
+      var gl = webGLProgram.getContext(); //Renders textures units
+
+      var i = 1;
+      var countT = 0;
+
       for (var text in this.textures) {
-        if (!(this.textures[text] instanceof MirrorTexture)) {
-          webGLProgram.getContext().activeTexture(webGLProgram.getContext().TEXTURE0);
-          webGLProgram.getContext().bindTexture(webGLProgram.getContext().TEXTURE_2D, this.textures[text].getTexture());
-          webGLProgram.getContext().uniform1i(webGLProgram.getShaderBuilder().getPointer("texture"), false, 0);
+        if (!(this.textures[text] instanceof MirrorTexture) && !(this.textures[text] instanceof ColorTexture)) {
+          gl.activeTexture(gl.TEXTURE0 + 0);
+          gl.bindTexture(gl.TEXTURE_2D, this.textures[text].getTexture());
+          gl.uniform1i(webGLProgram.getShaderBuilder().getPointer("texture" + countT), false, 0);
+          textIndexes[text] = i;
+          i *= 2;
+          countT++;
         }
+      }
+
+      var colorIndexes = []; //Renders colors
+
+      var j = 1;
+      var countC = 0;
+
+      for (var _text in this.textures) {
+        if (this.textures[_text] instanceof ColorTexture) {
+          gl.uniform4fv(webGLProgram.actualShaderBuilder.getPointer("color" + countC), this.textures[_text].getRGBA());
+          colorIndexes[_text] = j;
+          j *= 2;
+          countC++;
+        }
+      } //Renders nombres of informations pour chaque caractéristique
+      //Ambient
+
+
+      var count = 0;
+      var count2 = 0;
+
+      for (var _text2 in this.ambientTextures) {
+        if (!(this.textures[this.ambientTextures[_text2]] instanceof MirrorTexture) && !(this.textures[this.ambientTextures[_text2]] instanceof ColorTexture)) {
+          count += textIndexes[this.ambientTextures[_text2]];
+        } else if (this.textures[this.ambientTextures[_text2]] instanceof ColorTexture) {
+          count2 += colorIndexes[this.ambientTextures[_text2]];
+        }
+      }
+
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("ambientTIndex"), count);
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("ambientCIndex"), count2); //Diffuse
+
+      count = 0;
+      count2 = 0;
+
+      for (var _text3 in this.diffuseTextures) {
+        if (!(this.textures[this.diffuseTextures[_text3]] instanceof MirrorTexture) && !(this.textures[this.diffuseTextures[_text3]] instanceof ColorTexture)) {
+          count += textIndexes[this.diffuseTextures[_text3]];
+        } else if (this.textures[this.diffuseTextures[_text3]] instanceof ColorTexture) {
+          count2 += colorIndexes[this.diffuseTextures[_text3]];
+        }
+      }
+
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("diffuseTIndex"), count);
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("diffuseCIndex"), count2); //Specular
+
+      count = 0;
+      count2 = 0;
+
+      for (var _text4 in this.specularTextures) {
+        if (!(this.textures[this.specularTextures[_text4]] instanceof MirrorTexture) && !(this.textures[this.specularTextures[_text4]] instanceof ColorTexture)) {
+          count += textIndexes[this.specularTextures[_text4]];
+        } else if (this.textures[this.specularTextures[_text4]] instanceof ColorTexture) {
+          count2 += colorIndexes[this.specularTextures[_text4]];
+        }
+      }
+
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("specularTIndex"), count);
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("specularCIndex"), count2); //Shininess
+
+      count = 0;
+      count2 = 0;
+
+      for (var _text5 in this.shininessTextures) {
+        if (!(this.textures[this.shininessTextures[_text5]] instanceof MirrorTexture) && !(this.textures[this.shininessTextures[_text5]] instanceof ColorTexture)) {
+          count += textIndexes[this.shininessTextures[_text5]];
+        } else if (this.textures[this.shininessTextures[_text5]] instanceof ColorTexture) {
+          count2 += colorIndexes[this.shininessTextures[_text5]];
+        }
+      }
+
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("shininessTIndex"), count);
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("shininessCIndex"), count2); //Normal
+
+      count = 0;
+      count2 = 0;
+
+      for (var _text6 in this.normalTextures) {
+        if (!(this.textures[this.normalTextures[_text6]] instanceof MirrorTexture) && !(this.textures[this.normalTextures[_text6]] instanceof ColorTexture)) {
+          count += textIndexes[this.normalTextures[_text6]];
+        } else if (this.textures[this.normalTextures[_text6]] instanceof ColorTexture) {
+          count2 += colorIndexes[this.normalTextures[_text6]];
+        }
+      }
+
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("normalTIndex"), count);
+      gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("normalCIndex"), count2);
+
+      if (this.normalMap) {
+        gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("normalVarying"), 0);
+      } else {
+        gl.uniform1i(webGLProgram.actualShaderBuilder.getPointer("normalVarying"), 1);
       }
     }
   }, {
@@ -1392,7 +1496,22 @@ function () {
     }
   }, {
     key: "getInfos",
-    value: function getInfos() {//Nb de texture à rendre, etc...
+    value: function getInfos() {
+      var nbTextures = 0;
+      var nbColors = 0;
+
+      for (var text in this.textures) {
+        if (!(this.textures[text] instanceof MirrorTexture) && !(this.textures[text] instanceof ColorTexture)) {
+          nbTextures++;
+        } else if (this.textures[text] instanceof ColorTexture) {
+          nbColors++;
+        }
+      }
+
+      return {
+        "textures": nbTextures,
+        "colors": nbColors
+      };
     }
   }, {
     key: "setOpacity",
@@ -1463,11 +1582,15 @@ function () {
     key: "addTexture",
     value: function addTexture(name, texture) {
       if (typeof name != "string") {
-        movement = name;
+        texture = name;
         name = "texture" + Object.keys(this.textures).length;
       }
 
       this.textures[name] = texture;
+      this.ambientTextures = [name];
+      this.diffuseTextures = [name];
+      this.specularTextures = [name];
+      this.shininessTextures = [name];
     }
   }, {
     key: "removeTexture",
@@ -2640,7 +2763,7 @@ function () {
         webGLProgram.actualShaderBuilder = this.scene.getShaderBuilder();
       }
 
-      if (!webGLProgram.actualShaderBuilder.checkLights(this.scene.getNbAmbientLights(), this.scene.getNbDirectionalLights(), this.scene.getNbPointLights(), this.scene.getNbSpotLights()) && !webGLProgram.actualShaderBuilder.checkTextures(this.scene.getNbTextures())) {
+      if (!webGLProgram.actualShaderBuilder.checkLights(this.scene.getNbAmbientLights(), this.scene.getNbDirectionalLights(), this.scene.getNbPointLights(), this.scene.getNbSpotLights()) && !webGLProgram.actualShaderBuilder.checkTextures(this.scene.getInfos())) {
         webGLProgram.actualShaderBuilder.buildShaderProgram(gl, this.scene);
       } else if (webGLProgram.actualShaderBuilder.needRebuild()) {
         webGLProgram.actualShaderBuilder.buildShaderProgram(gl, this.scene);
@@ -2964,9 +3087,22 @@ function () {
       return this.activeCamera;
     }
   }, {
-    key: "getNbTextures",
-    value: function getNbTextures() {
-      return 0;
+    key: "getInfos",
+    value: function getInfos() {
+      var nbTextures = 0;
+      var nbColors = 0;
+      var objs = this.getAllObjects();
+
+      for (var obj in objs) {
+        var infos = objs[obj].getMaterialInfos();
+        nbTextures = Math.max(nbTextures, infos.textures);
+        nbColors = Math.max(nbColors, infos.colors);
+      }
+
+      return {
+        "textures": nbTextures,
+        "colors": nbColors
+      };
     }
   }, {
     key: "addRenderer",
@@ -3252,15 +3388,14 @@ function () {
     this.pointLights = [];
     this.spotLights = [];
     this.needReBuild = true;
-    this.nbTextures = null; //Vertex Shader Attributes
+    this.nbTextures = null;
+    this.nbColors = null; //Vertex Shader Attributes
 
     this.vertexAttributes = {
       "position": true
     }; //Fragment Shader Attributes
 
     this.fragmentAttributes = {
-      "color": false,
-      // ALWAYS FALSE
       "textureCoordonnees": true,
       // ALWAYS TRUE
       "normal": true
@@ -3278,11 +3413,21 @@ function () {
     }; //Fragment Shader Uniform
 
     this.fragmentUniforms = {
-      "texture": true,
-      // ALWAYS TRUE
       "opacity": true,
       "normalColor": false,
-      "IDasColor": false //"depthTexture" : true,
+      "IDasColor": false,
+      "ambientTIndex": true,
+      "ambientCIndex": true,
+      "diffuseTIndex": true,
+      "diffuseCIndex": true,
+      "specularTIndex": true,
+      "specularCIndex": true,
+      "shininessTIndex": true,
+      "shininessCIndex": true,
+      "normalTIndex": true,
+      "normalCIndex": true,
+      "normalVarying": true //Material
+      //"depthTexture" : true,
 
     };
     this.infos = {
@@ -3290,13 +3435,6 @@ function () {
         "nbDatas": 3,
         "type": "attribute vec4",
         "name": "aVertexPosition"
-      },
-      "color": {
-        "nbDatas": 4,
-        "type": "attribute vec4",
-        "name": "aVertexColor",
-        "varyingType": "varying lowp vec4",
-        "varyingName": "vColor"
       },
       "normal": {
         "nbDatas": 3,
@@ -3316,10 +3454,6 @@ function () {
       "localTransformationTransposeInvert": {
         "type": "uniform mat4",
         "name": "uLocalTransformationTIMatrix"
-      },
-      "texture": {
-        "type": "uniform sampler2D",
-        "name": "uSampler"
       },
       "opacity": {
         "type": "uniform highp float",
@@ -3359,15 +3493,55 @@ function () {
       "cameraPosition": {
         "type": "uniform lowp vec3",
         "name": "uCamPosition"
-      } // "depthTexture" : {
-      // 	"type" : "uniform bool",
-      // 	"name" : "uDepthTextureActive",
-      // }
-
+      },
+      //Material
+      "ambientTIndex": {
+        "type": "uniform lowp int",
+        "name": "uAmbientTIndex"
+      },
+      "ambientCIndex": {
+        "type": "uniform lowp int",
+        "name": "uAmbientCIndex"
+      },
+      "diffuseTIndex": {
+        "type": "uniform lowp int",
+        "name": "uDiffuseTIndex"
+      },
+      "diffuseCIndex": {
+        "type": "uniform lowp int",
+        "name": "uDiffuseCIndex"
+      },
+      "specularTIndex": {
+        "type": "uniform lowp int",
+        "name": "uSpecularTIndex"
+      },
+      "specularCIndex": {
+        "type": "uniform lowp int",
+        "name": "uSpecularCIndex"
+      },
+      "shininessTIndex": {
+        "type": "uniform lowp int",
+        "name": "uShininessTIndex"
+      },
+      "shininessCIndex": {
+        "type": "uniform lowp int",
+        "name": "uShininessCIndex"
+      },
+      "normalTIndex": {
+        "type": "uniform lowp int",
+        "name": "uNormalTIndex"
+      },
+      "normalCIndex": {
+        "type": "uniform lowp int",
+        "name": "uNormalCIndex"
+      },
+      "normalVarying": {
+        "type": "uniform bool",
+        "name": "uNormalVarying"
+      }
     };
     this.pointers = {
       "position": null,
-      "color": null,
       "normal": null,
       "projection": null,
       "localTransformation": null,
@@ -3380,8 +3554,18 @@ function () {
       "opacity": null,
       "normalColor": null,
       "IDasColor": null,
-      "cameraPosition": null //"depthTexture" : null,
-
+      "cameraPosition": null,
+      "ambientTIndex": null,
+      "ambientCIndex": null,
+      "diffuseTIndex": null,
+      "diffuseCIndex": null,
+      "specularTIndex": null,
+      "specularCIndex": null,
+      "shininessTIndex": null,
+      "shininessCIndex": null,
+      "normalTIndex": null,
+      "normalCIndex": null,
+      "normalVarying": null
     };
   }
 
@@ -3407,39 +3591,31 @@ function () {
           this.normalDisplay = false;
           this.fragmentAttributes["normal"] = true;
           this.fragmentAttributes["textureCoordonnees"] = true;
-          this.fragmentAttributes["color"] = false;
           this.fragmentUniforms["normalColor"] = false;
-          this.fragmentUniforms["texture"] = true;
           this.fragmentUniforms["opacity"] = true;
           this.fragmentUniforms["IDasColor"] = false;
         } else if (mode == "normal") {
           this.triangleMode = false;
           this.normalDisplay = true;
-          this.fragmentAttributes["color"] = false;
           this.fragmentAttributes["normal"] = false;
           this.fragmentAttributes["textureCoordonnees"] = false;
           this.fragmentUniforms["normalColor"] = true;
-          this.fragmentUniforms["texture"] = false;
           this.fragmentUniforms["opacity"] = false;
           this.fragmentUniforms["IDasColor"] = false;
         } else if (mode == "event") {
           this.triangleMode = true;
           this.normalDisplay = false;
-          this.fragmentAttributes["color"] = false;
           this.fragmentAttributes["normal"] = false;
           this.fragmentAttributes["textureCoordonnees"] = false;
           this.fragmentUniforms["normalColor"] = false;
-          this.fragmentUniforms["texture"] = false;
           this.fragmentUniforms["opacity"] = false;
           this.fragmentUniforms["IDasColor"] = true;
         } else {
           this.triangleMode = true;
           this.normalDisplay = false;
-          this.fragmentAttributes["color"] = false;
           this.fragmentAttributes["normal"] = true;
           this.fragmentAttributes["textureCoordonnees"] = true;
           this.fragmentUniforms["normalColor"] = false;
-          this.fragmentUniforms["texture"] = true;
           this.fragmentUniforms["opacity"] = true;
           this.fragmentUniforms["IDasColor"] = false;
         }
@@ -3470,22 +3646,9 @@ function () {
       return result;
     }
   }, {
-    key: "setTextureRenderer",
-    value: function setTextureRenderer(bool) {
-      if (bool) {
-        this.fragmentAttributes["color"] = false;
-        this.fragmentAttributes["textureCoordonnees"] = true;
-        this.fragmentUniforms["texture"] = true;
-      } else {
-        this.fragmentAttributes["color"] = true;
-        this.fragmentAttributes["textureCoordonnees"] = false;
-        this.fragmentUniforms["texture"] = false;
-      }
-    }
-  }, {
     key: "checkTextures",
-    value: function checkTextures(nbTextures) {
-      return this.nbTextures == nbTextures;
+    value: function checkTextures(infos) {
+      return this.nbTextures == infos.textures && this.nbColors == infos.colors;
     }
   }, {
     key: "checkLights",
@@ -3535,6 +3698,9 @@ function () {
       this.directionalLights = scene.getDirectionalLights();
       this.pointLights = scene.getPointLights();
       this.spotLights = scene.getSpotLights();
+      var texturesInfos = scene.getInfos();
+      this.nbTextures = texturesInfos.textures;
+      this.nbColors = texturesInfos.colors;
 
       if (Object.keys(this.directionalLights).length != 0 || Object.keys(this.pointLights).length != 0 || Object.keys(this.spotLights).length != 0) {
         this.vertexUniforms["cameraPosition"] = true;
@@ -3708,18 +3874,24 @@ function () {
       } //Textures Mapping
 
 
-      this.nbTextures = scene.getNbTextures(); //Associé une texture et uint avec un code permettant de savoir à quel type de texture l'attribuer
-      //1 pour normal
-      //2 pour ambiant
-      //4 pour difuse
-      //8 pour specular
-      //16 pour shininess
-      //Valeurs brutes sans texture
-      //1 pour normal
-      //2 pour ambiant
-      //4 pour difuse
-      //8 pour specular
-      //16 pour shininess
+      for (var i = 0; i < this.nbTextures; i++) {
+        this.fragmentUniforms["texture" + i] = true;
+        this.pointers["texture" + i] = null;
+        this.infos["texture" + i] = {
+          "type": "uniform sampler2D",
+          "name": "uSampler" + i
+        };
+      } //Colors Mapping
+
+
+      for (var _i = 0; _i < this.nbColors; _i++) {
+        this.fragmentUniforms["color" + _i] = true;
+        this.pointers["color" + _i] = null;
+        this.infos["color" + _i] = {
+          "type": "uniform mediump vec4",
+          "name": "uColor" + _i
+        };
+      }
 
       this._buildShaders();
 
@@ -3905,7 +4077,7 @@ function () {
   }, {
     key: "_buildFragmentShader",
     value: function _buildFragmentShader() {
-      this.fragmentSrc = '';
+      this.fragmentSrc = " precision mediump float; ";
 
       for (var a in this.fragmentAttributes) {
         if (this.fragmentAttributes[a]) {
@@ -3941,21 +4113,42 @@ function () {
 
 
       this.fragmentSrc += "\n\t\t\tlowp vec3 ambientLight(vec3 ambientLight, vec3 ambientObject){\n\t\t\t\tlowp vec3 ambient  = ambientLight  * ambientObject;\n\t\t\t\treturn ambient;\n\t\t\t}\n\t\t\tlowp vec3 directionalLight(vec3 normal, vec3 lightVec, vec3 viewVec, vec3 ambientLight, vec3 ambientObject, vec3 diffuseLight, vec3 diffuseObject, vec3 specularLight, vec3 specularObject, float shininess){\n\t\t\t\thighp float diff = max(dot(normalize(normal), lightVec), 0.0);\n\t\t\t\tlowp vec3 reflectDir = reflect(lightVec, normalize(normal));\n    \t\tmediump float spec = pow(max(dot(viewVec, reflectDir), 0.0), shininess);\n\t\t\t\tlowp vec3 ambient  = ambientLight  * ambientObject;\n    \t\tlowp vec3 diffuse  = diffuseLight  * diff * diffuseObject;\n    \t\tlowp vec3 specular = specularLight * spec * specularObject;\n\t\t\t\treturn ambient + diffuse + specular;\n\t\t\t}\n\t\t\tlowp vec3 pointLight(vec3 normal, float constDissip, float linDissip, float quadDissip, vec3 lightVec, vec3 viewVec, vec3 ambientLight, vec3 ambientObject, vec3 diffuseLight, vec3 diffuseObject, vec3 specularLight, vec3 specularObject, float shininess){\n\t\t\t\thighp float diff = max(dot(normalize(normal), normalize(lightVec)), 0.0);\n\t\t\t\tlowp vec3 reflectDir = reflect(normalize(lightVec), normalize(normal));\n    \t\tmediump float spec = pow(max(dot(viewVec, reflectDir), 0.0), shininess);\n\n    \t\tmediump float distance    = length(lightVec);\n    \t\tmediump float sum = (constDissip + linDissip * distance + quadDissip * (distance * distance));\n    \t\tmediump float attenuation = 1.0;\n    \t\tif(sum != 0.0){\n    \t\t\tattenuation = clamp(1.0 / sum, 0.0, 1.0);  \n    \t\t}\n\n\t\t\t\tlowp vec3 ambient  = ambientLight  * ambientObject * attenuation;\n    \t\tlowp vec3 diffuse  = diffuseLight  * diff * diffuseObject * attenuation;\n    \t\tlowp vec3 specular = specularLight * spec * specularObject * attenuation;\n\t\t\t\treturn ambient + diffuse + specular;\n\t\t\t}\n\t\t\tlowp vec3 spotLight(vec3 normal, float iLimit, float oLimit, vec3 direction, float constDissip, float linDissip, float quadDissip, vec3 lightVec, vec3 viewVec, vec3 ambientLight, vec3 ambientObject, vec3 diffuseLight, vec3 diffuseObject, vec3 specularLight, vec3 specularObject, float shininess){\n\t\t\t\tmediump float isIn = max(dot(normalize(-direction), normalize(lightVec)), 0.0);\n\t\t\t\tmediump float diff = 0.0;\n\t\t\t\tmediump float spec = 0.0;\n\t\t\t\tlowp vec3 reflectDir;\n\t\t\t\tif(isIn > iLimit){ \n\t\t\t\t\tdiff = max(dot(normalize(normal), normalize(lightVec)), 0.0);\n\t\t\t\t\treflectDir = reflect(normalize(lightVec), normalize(normal));\n\t\t\t\t\tspec = pow(max(dot(viewVec, reflectDir), 0.0), shininess);\n\t\t\t\t}else if(isIn < oLimit){ \n\t\t\t\t\tdiff = 0.0;\n\t\t\t\t\tspec = 0.0;\n\t\t\t\t}else{\n\t\t\t\t\tlowp float deg = clamp(( isIn - oLimit) / (iLimit - oLimit), 0.0, 1.0);\n\t\t\t\t\treflectDir = reflect(normalize(lightVec), normalize(normal));\n\t\t\t\t\tdiff = deg * max(dot(normalize(normal), normalize(lightVec)), 0.0);\n\t\t\t\t\tspec = deg * pow(max(dot(viewVec, reflectDir), 0.0), shininess);\n\t\t\t\t} \n\n    \t\tmediump float distance = length(lightVec);\n    \t\tmediump float sum = (constDissip + linDissip * distance + quadDissip * (distance * distance));\n    \t\tmediump float attenuation = 1.0;\n    \t\tif(sum != 0.0){\n    \t\t\tattenuation = clamp(1.0 / sum, 0.0, 1.0);  \n    \t\t}\n\n\t\t\t\tlowp vec3 ambient  = ambientLight  * ambientObject * attenuation;\n    \t\tlowp vec3 diffuse  = diffuseLight  * diff * diffuseObject * attenuation;\n    \t\tlowp vec3 specular = specularLight * spec * specularObject * attenuation;\n\t\t\t\treturn ambient + diffuse + specular;\n\t\t\t}\n\t\t\t";
-      ;
-      this.fragmentSrc += "void main() {"; //Color
-      //ICI IL FAUT DETERMINER la valeur de ambient, de diffuse, de specular et shininess
+      this.fragmentSrc += "lowp vec4 determineColor(int textIndex, int colorIndex){";
+      this.fragmentSrc += "lowp vec4 result = vec4(1, 1, 1, 1);"; //Textures
 
-      if (this.fragmentAttributes["color"]) {
-        this.fragmentSrc += "lowp vec4 materialAmbient = " + this.infos["color"].varyingName + ";";
-        this.fragmentSrc += "lowp vec4 materialDiffuse = " + this.infos["color"].varyingName + ";";
-        this.fragmentSrc += "lowp vec4 materialSpecular = vec4(1., 1., 1., 1.);";
-        this.fragmentSrc += "highp float materialShininess = 100.0;";
-      } else if (this.fragmentAttributes["textureCoordonnees"]) {
-        this.fragmentSrc += "lowp vec4 materialAmbient = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
-        this.fragmentSrc += "lowp vec4 materialDiffuse = texture2D(" + this.infos["texture"].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
-        this.fragmentSrc += "lowp vec4 materialSpecular = vec4(1., 1., 1., 1.);";
-        this.fragmentSrc += "highp float materialShininess = 100.0;";
+      this.fragmentSrc += "lowp int temp = textIndex;";
+
+      for (var i = this.nbTextures - 1; i >= 0; i--) {
+        this.fragmentSrc += "if(temp >= " + Math.pow(2, i) + "){";
+
+        if (this.fragmentAttributes["textureCoordonnees"]) {
+          this.fragmentSrc += "result = result * texture2D(" + this.infos["texture" + i].name + ", " + this.infos["textureCoordonnees"].varyingName + ");";
+          this.fragmentSrc += "temp = temp - " + Math.pow(2, i) + ";";
+        }
+
+        this.fragmentSrc += "}";
+      } //Colors
+
+
+      this.fragmentSrc += "temp = colorIndex;";
+
+      for (var _i2 = this.nbColors - 1; _i2 >= 0; _i2--) {
+        this.fragmentSrc += "if(temp >= " + Math.pow(2, _i2) + "){";
+        this.fragmentSrc += "result = result * " + this.infos["color" + _i2].name + ";";
+        this.fragmentSrc += "temp = temp - " + Math.pow(2, _i2) + ";";
+        this.fragmentSrc += "}";
       }
+
+      this.fragmentSrc += "return result;";
+      this.fragmentSrc += "}";
+      this.fragmentSrc += "highp float determineShininess(int textIndex, int colorIndex){\n\t\t\t\tlowp vec4 result = determineColor(textIndex, colorIndex);\n\t\t\t\treturn (result.r * 1000.0 + result.g * 100.0 + result.b * 10.0 + result.a);\n\t\t\t}";
+      ;
+      this.fragmentSrc += "void main() {"; //Material
+
+      this.fragmentSrc += "lowp vec4 materialAmbient = determineColor(" + this.infos["ambientTIndex"].name + "," + this.infos["ambientCIndex"].name + ");";
+      this.fragmentSrc += "lowp vec4 materialDiffuse = determineColor(" + this.infos["diffuseTIndex"].name + "," + this.infos["diffuseCIndex"].name + ");";
+      this.fragmentSrc += "lowp vec4 materialSpecular = determineColor(" + this.infos["specularTIndex"].name + "," + this.infos["specularCIndex"].name + ");";
+      this.fragmentSrc += "highp float materialShininess = determineShininess(" + this.infos["shininessTIndex"].name + "," + this.infos["shininessCIndex"].name + ");";
 
       if (this.mode != "normal" && this.mode != "event") {
         if (Object.keys(this.ambientLights).length != 0 || Object.keys(this.directionalLights).length != 0 || Object.keys(this.pointLights).length != 0 || Object.keys(this.spotLights).length != 0) {
@@ -5040,6 +5233,8 @@ var Cube = require("../class/Objects3D/Cube.class.js");
 
 var AmbientLight = require("../class/Lights/AmbientLight.class.js");
 
+var DirectionalLight = require("../class/Lights/DirectionalLight.class.js");
+
 var Scene = require("../class/Scene.class.js");
 
 var Rotate = require("../class/Movements/Rotate.class.js");
@@ -5055,34 +5250,18 @@ module.exports = function () {
 
   var tete = new Cube();
   tete.setSize(2);
-  tete.setColors([1, 0, 1, 1], //Devant
-  [1, 1, 1, 1], //Gauche
-  [0, 1, 0, 1], //Haut
-  [0, 0, 1, 1], //Droite
-  [1, 1, 0, 1], //Bas
-  [0, 1, 1, 1] //Derriere
-  );
+  var textTete = program.createColorTexture(1, 0, 1, 1);
+  tete.addTexture(textTete);
   tete.setPosition(0, 0, 0); //Yeux
 
   var oeil1 = new Cube();
+  var textYeux = program.createColorTexture(0, 1, 1, 1);
   oeil1.setSize(0.5);
-  oeil1.setColors([0, 1, 1, 1], //Devant
-  [0, 1, 1, 1], //Gauche
-  [0, 1, 1, 1], //Haut
-  [0, 1, 1, 1], //Droite
-  [0, 1, 1, 1], //Bas
-  [0, 1, 1, 1] //Derriere
-  );
+  oeil1.addTexture(textYeux);
   oeil1.setPosition(-0.6, 0.5, 0);
   var oeil2 = new Cube();
   oeil2.setSize(0.5);
-  oeil2.setColors([0, 1, 1, 1], //Devant
-  [0, 1, 1, 1], //Gauche
-  [0, 1, 1, 1], //Haut
-  [0, 1, 1, 1], //Droite
-  [0, 1, 1, 1], //Bas
-  [0, 1, 1, 1] //Derriere
-  );
+  oeil2.addTexture(textYeux);
   oeil2.setPosition(0.6, 0.5, 0);
   var yeux = new Object3DGroup();
   yeux.add3DObject("oeil1", oeil1);
@@ -5099,35 +5278,18 @@ module.exports = function () {
   oeil2.addMovement("move", moveOeil2);
   moveOeil2.start(); //Bouche
 
+  var textDents = program.createColorTexture(1, 1, 1, 1);
   var dent1 = new Cube();
   dent1.setSize(0.1);
-  dent1.setColors([1, 1, 1, 1], //Devant
-  [1, 1, 1, 1], //Gauche
-  [1, 1, 1, 1], //Haut
-  [1, 1, 1, 1], //Droite
-  [1, 1, 1, 1], //Bas
-  [1, 1, 1, 1] //Derriere
-  );
+  dent1.addTexture(textDents);
   dent1.setPosition(-0.25, 0, 0);
   var dent2 = new Cube();
   dent2.setSize(0.1);
-  dent2.setColors([1, 1, 1, 1], //Devant
-  [1, 1, 1, 1], //Gauche
-  [1, 1, 1, 1], //Haut
-  [1, 1, 1, 1], //Droite
-  [1, 1, 1, 1], //Bas
-  [1, 1, 1, 1] //Derriere
-  );
+  dent2.addTexture(textDents);
   dent2.setPosition(0, 0, 0);
   var dent3 = new Cube();
   dent3.setSize(0.1);
-  dent3.setColors([1, 1, 1, 1], //Devant
-  [1, 1, 1, 1], //Gauche
-  [1, 1, 1, 1], //Haut
-  [1, 1, 1, 1], //Droite
-  [1, 1, 1, 1], //Bas
-  [1, 1, 1, 1] //Derriere
-  );
+  dent3.addTexture(textDents);
   dent3.setPosition(0.25, 0, 0);
   var dents = new Object3DGroup();
   dents.add3DObject("dent1", dent1);
@@ -5149,15 +5311,11 @@ module.exports = function () {
   camera.setPosition(0, 0, 9);
   scene.addCamera("main", camera);
   scene.setCamera("main");
-  var light = new AmbientLight();
+  var light = new DirectionalLight();
   light.setRGB(1, 1, 1);
-  light.setPower(1);
+  light.setPower([0.1, 1, 1]);
+  light.setDirection(-0.3, 0, -1);
   scene.addLight("ambient", light);
-  var light2 = new AmbientLight();
-  light2.setRGB(1, 1, 1);
-  light2.setPower(0.2);
-  scene.addLight("ambient2", light2);
-  scene.getShaderBuilder(0).setTextureRenderer(false);
   program.setScene(scene);
   program.start();
   window.addEventListener('DOMContentLoaded', function (event) {
@@ -5208,7 +5366,7 @@ module.exports = function () {
     });
   });
 };
-},{"../class/Camera.class.js":1,"../class/Lights/AmbientLight.class.js":7,"../class/Movements/Rotate.class.js":13,"../class/Objects3D/Cube.class.js":16,"../class/Objects3D/Object3DGroup.class.js":17,"../class/Scene.class.js":20,"../class/WebGLProgram.class.js":29}],32:[function(require,module,exports){
+},{"../class/Camera.class.js":1,"../class/Lights/AmbientLight.class.js":7,"../class/Lights/DirectionalLight.class.js":8,"../class/Movements/Rotate.class.js":13,"../class/Objects3D/Cube.class.js":16,"../class/Objects3D/Object3DGroup.class.js":17,"../class/Scene.class.js":20,"../class/WebGLProgram.class.js":29}],32:[function(require,module,exports){
 "use strict";
 
 var WebGLProgram = require("../class/WebGLProgram.class.js");
@@ -5251,8 +5409,8 @@ module.exports = function () {
   plan.setPosition(0, 0, 0);
   var texture2 = program.createColorTexture(0.0, 0.0, 0.8, 0.4);
   var texture3 = program.createMirrorTexture();
-  plan.addTexture("color", texture2);
   plan.addTexture("mirror", texture3);
+  plan.addTexture("color", texture2);
   var rotate = new Rotate(45, [0, 1, 0], 0, function () {});
   var rotatee = new Rotate(-65, [1, 0, 0], 0, function () {});
   rotate.setPosition(0, 0, 0);
